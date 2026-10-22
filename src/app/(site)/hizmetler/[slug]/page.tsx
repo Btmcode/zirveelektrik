@@ -6,13 +6,19 @@ import { ChevronRight, Wallet } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Breadcrumbs } from "@/components/site/breadcrumbs";
 import { JsonLd } from "@/components/site/json-ld";
-import { MarkdownContent } from "@/components/site/markdown";
+import {
+  MarkdownContent,
+  createHeadingIdState,
+} from "@/components/site/markdown";
 import { FaqAccordion } from "@/components/site/faq-accordion";
 import { CtaBanner } from "@/components/site/cta-banner";
 import { ContactCtaCard } from "@/components/site/contact-cta-card";
+import { ServiceInlineCta } from "@/components/site/service-inline-cta";
+import { ReviewsStrip } from "@/components/site/reviews-strip";
 import { getIcon } from "@/components/site/icon-map";
 import { faqSchema, serviceSchema } from "@/lib/schema";
 import {
+  getAllDistricts,
   getAllServices,
   getServiceBySlug,
 } from "@/lib/queries";
@@ -47,7 +53,41 @@ function buildServiceFaqs(service: {
       question: `${service.title} işleriniz garanti kapsamında mı?`,
       answer: `Evet. ${service.title} kapsamındaki işçilik ve kullanılan malzemeler garanti kapsamındadır; garanti süresi ve şartları iş öncesi teklifte yazılı olarak belirtilir. İş sonrası olası bir sorunda aynı ekip yeniden değerlendirme yapar.`,
     },
+    {
+      question: `${service.title} için ödemeyi nasıl yapabilirim?`,
+      answer: `Ödemeyi iş tamamlandıktan sonra nakit ya da havale/EFT ile yapabilirsiniz. Başlangıçta ön ödeme talep edilmez; öncelikle tespit yapılır, teklif onaylanır, iş bitince ödeme alınır. Talep ederseniz işe ait fatura veya makbuz düzenlenir.`,
+    },
+    {
+      question: `${service.title} hizmetini hangi ilçelerde veriyorsunuz?`,
+      answer: `İstanbul'un Avrupa ve Anadolu yakasındaki 39 ilçenin tamamında ${service.title.toLocaleLowerCase("tr-TR")} hizmeti veriyoruz. Aradığınızda adresinizi söylemeniz yeterli; en yakın ustamız size yönlendirilir. İlçe bazlı ayrıntılar için hizmet bölgeleri sayfamıza göz atabilirsiniz.`,
+    },
+    {
+      question: `Acil durumlarda ${service.title.toLocaleLowerCase("tr-TR")} için ne kadar sürede geliyorsunuz?`,
+      answer: `Acil arızalarda en yakın müsait ustamız yönlendirilir; varış süresi adresinize ve trafiğe göre değişir. Arama sırasında size tahmini bir süre söylenir. Yoğun saatlerde süre uzayabileceği için sorunu fark ettiğiniz an aramanızı öneririz.`,
+    },
   ];
+}
+
+/**
+ * Hizmet sayfası ilçe bağlantıları: iç link ağını güçlendirir.
+ * Slug'tan üretilen deterministik döndürmeyle her hizmet sayfası farklı
+ * ilçe alt kümesi gösterir (şablon tekrarı yerine çeşitlilik).
+ */
+function pickDistricts<T extends { slug: string }>(
+  districts: T[],
+  slug: string,
+  count: number
+): T[] {
+  if (districts.length === 0) return [];
+  const hash = slug
+    .split("")
+    .reduce((acc, ch) => acc + ch.charCodeAt(0), 0);
+  const offset = hash % districts.length;
+  const rotated = [
+    ...districts.slice(offset),
+    ...districts.slice(0, offset),
+  ];
+  return rotated.slice(0, Math.min(count, districts.length));
 }
 
 interface ServiceDetailPageProps {
@@ -74,9 +114,10 @@ export async function generateMetadata({
 
 export default async function ServiceDetailPage({ params }: ServiceDetailPageProps) {
   const { slug } = await params;
-  const [service, allServices] = await Promise.all([
+  const [service, allServices, districts] = await Promise.all([
     getServiceBySlug(slug),
     getAllServices(),
+    getAllDistricts(),
   ]);
 
   if (!service) notFound();
@@ -86,6 +127,16 @@ export default async function ServiceDetailPage({ params }: ServiceDetailPagePro
     .filter((item) => item.slug !== service.slug)
     .slice(0, 5);
   const serviceFaqs = buildServiceFaqs(service);
+  const linkedDistricts = pickDistricts(districts, service.slug, 12);
+
+  // İçeriği H2 sınırlarından ikiye böl: ortada dönüşüm CTA'sı gösterir
+  const sections = service.content.split(/(?=\n## )/);
+  const canSplit = sections.length >= 4;
+  const splitIndex = Math.ceil(sections.length / 2);
+  const firstHalf = canSplit ? sections.slice(0, splitIndex).join("") : null;
+  const secondHalf = canSplit ? sections.slice(splitIndex).join("") : null;
+  // İki parça aynı başlık id sayaç durumunu paylaşır (deterministik anchor)
+  const headingIdState = createHeadingIdState();
 
   return (
     <>
@@ -125,7 +176,18 @@ export default async function ServiceDetailPage({ params }: ServiceDetailPagePro
             </header>
 
             <div className="mt-8">
-              <MarkdownContent content={service.content} />
+              {canSplit && firstHalf && secondHalf ? (
+                <>
+                  <MarkdownContent content={firstHalf} idState={headingIdState} />
+                  <ServiceInlineCta serviceTitle={service.title} />
+                  <MarkdownContent content={secondHalf} idState={headingIdState} />
+                </>
+              ) : (
+                <>
+                  <MarkdownContent content={service.content} idState={headingIdState} />
+                  <ServiceInlineCta serviceTitle={service.title} />
+                </>
+              )}
             </div>
 
             {/* AEO: hizmete özgü soru-cevap bölümü */}
@@ -160,6 +222,43 @@ export default async function ServiceDetailPage({ params }: ServiceDetailPagePro
                 </div>
               </aside>
             ) : null}
+
+            {/* Bağlamsal ilçe bağlantıları: hizmet ↔ bölge iç link ağı */}
+            {linkedDistricts.length > 0 ? (
+              <section aria-label="Hizmet bölgeleri" className="mt-10">
+                <h2 className="text-xl font-bold tracking-tight text-foreground">
+                  İstanbul&apos;un Tüm İlçelerinde {service.title}
+                </h2>
+                <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+                  Bu hizmeti İstanbul&apos;un 39 ilçesinde veriyoruz. Başlıca
+                  bölgelerimizden bazıları:
+                </p>
+                <ul className="mt-4 flex flex-wrap gap-2">
+                  {linkedDistricts.map((district) => (
+                    <li key={district.id}>
+                      <Link
+                        href={`/bolgeler/${district.slug}`}
+                        className="inline-flex items-center rounded-full border border-border bg-card px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:border-primary/50 hover:bg-accent hover:text-foreground focus-visible:outline-2 focus-visible:outline-ring"
+                      >
+                        {district.name} Elektrikçi
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+                <p className="mt-3 text-sm text-muted-foreground">
+                  İlçenizi listede göremediniz mi?{" "}
+                  <Link
+                    href="/bolgeler"
+                    className="font-medium text-primary hover:underline"
+                  >
+                    Tüm hizmet bölgelerimize
+                  </Link>{" "}
+                  göz atabilirsiniz.
+                </p>
+              </section>
+            ) : null}
+
+            <ReviewsStrip />
           </div>
 
           {/* Yan kolon */}

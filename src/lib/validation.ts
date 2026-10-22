@@ -27,11 +27,10 @@ export const serviceRequestSchema = z.object({
   message: z.string().trim().min(10, "Arızayı kısaca anlatın (en az 10 karakter)").max(2000),
   // KVKK m.10: aydınlatma metni bilgilendirmesinin onaylandığına dair aktif rıza.
   // boolean + refine: RHF defaultValues tipi (false) ile uyumludur.
+  // zod v4: tip hatası mesajı için "error" parametresi kullanılır.
   kvkkConsent: z
     .boolean({
-      errorMap: () => ({
-        message: "Devam etmek için KVKK Aydınlatma Metni'ni onaylamalısınız",
-      }),
+      error: "Devam etmek için KVKK Aydınlatma Metni'ni onaylamalısınız",
     })
     .refine((v) => v === true, {
       message: "Devam etmek için KVKK Aydınlatma Metni'ni onaylamalısınız",

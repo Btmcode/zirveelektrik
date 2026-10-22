@@ -75,7 +75,7 @@ export function BlogCard({ post, priority = false }: BlogCardProps) {
         <p className="mt-auto flex flex-wrap items-center gap-x-3 gap-y-1 pt-4 text-xs text-muted-foreground">
           <span className="flex items-center gap-1.5">
             <Calendar className="size-3.5 shrink-0" aria-hidden="true" />
-            <time dateTime={(post.publishedAt ?? post.updatedAt).toISOString()}>
+            <time dateTime={new Date(post.publishedAt ?? post.updatedAt).toISOString()}>
               {date}
             </time>
           </span>

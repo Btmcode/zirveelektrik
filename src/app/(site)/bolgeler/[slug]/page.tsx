@@ -9,8 +9,13 @@ import { JsonLd } from "@/components/site/json-ld";
 import { MarkdownContent } from "@/components/site/markdown";
 import { CtaBanner } from "@/components/site/cta-banner";
 import { ContactCtaCard } from "@/components/site/contact-cta-card";
+import { ReviewsStrip } from "@/components/site/reviews-strip";
 import { localBusinessSchema } from "@/lib/schema";
-import { getAllServices, getDistrictBySlug } from "@/lib/queries";
+import {
+  getAllServices,
+  getApprovedTestimonials,
+  getDistrictBySlug,
+} from "@/lib/queries";
 import { getSettings } from "@/lib/settings";
 
 export const dynamic = "force-dynamic";
@@ -43,10 +48,11 @@ export default async function DistrictDetailPage({
   params,
 }: DistrictDetailPageProps) {
   const { slug } = await params;
-  const [district, services, settings] = await Promise.all([
+  const [district, services, settings, testimonials] = await Promise.all([
     getDistrictBySlug(slug),
     getAllServices(),
     getSettings(),
+    getApprovedTestimonials(),
   ]);
 
   if (!district) notFound();
@@ -58,7 +64,16 @@ export default async function DistrictDetailPage({
 
   return (
     <>
-      <JsonLd data={localBusinessSchema({ phone: settings.phone })} />
+      <JsonLd
+        data={localBusinessSchema({
+          phone: settings.phone,
+          reviews: testimonials.map((testimonial) => ({
+            author: testimonial.name,
+            content: testimonial.content,
+            rating: testimonial.rating,
+          })),
+        })}
+      />
       <Breadcrumbs
         items={[
           { name: "Bölgeler", url: "/bolgeler" },
@@ -110,6 +125,8 @@ export default async function DistrictDetailPage({
                 </ul>
               </section>
             ) : null}
+
+            <ReviewsStrip />
           </div>
 
           {/* Yan kolon */}
