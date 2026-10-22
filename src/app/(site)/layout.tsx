@@ -1,6 +1,7 @@
 import { Header } from "@/components/site/header";
 import { Footer } from "@/components/site/footer";
 import { MobileCallBar } from "@/components/site/mobile-call-bar";
+import { CookieConsent } from "@/components/site/cookie-consent";
 import { getSettings, telHref, waHref } from "@/lib/settings";
 
 export const dynamic = "force-dynamic";
@@ -35,6 +36,7 @@ export default async function SiteLayout({
       </main>
       <Footer />
       <MobileCallBar phone={settings.phone} telUrl={telUrl} waUrl={waUrl} />
+      <CookieConsent />
     </div>
   );
 }

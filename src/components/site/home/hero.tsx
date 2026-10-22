@@ -35,7 +35,7 @@ export async function Hero() {
             İstanbul 7/24 Acil Elektrikçi
           </Badge>
           <h1 className="mt-5 text-3xl font-bold tracking-tight text-foreground md:text-5xl">
-            İstanbul Elektrikçi - 7/24 Arıza Tespiti ve Anında Çözüm
+            İstanbul Elektrikçi - 7/24 Acil Nöbetçi Servis ve Anında Çözüm
           </h1>
           <p className="mt-5 max-w-xl text-base leading-relaxed text-muted-foreground md:text-lg">
             Sigorta atması, elektrik kaçağı, pano arızası ya da priz sorunu...

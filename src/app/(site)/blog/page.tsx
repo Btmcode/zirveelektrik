@@ -9,9 +9,9 @@ export const dynamic = "force-dynamic";
 
 export async function generateMetadata(): Promise<Metadata> {
   return {
-    title: "Blog - Elektrik Sorunları ve Çözümleri",
+    title: "Blog - Elektrik Rehberleri: Sigorta, Kaçak ve Tesisat",
     description:
-      "Sigorta atması, elektrik kaçağı, topraklama ve tesisat sorunları hakkında uzman rehberleri. Elektrik arızalarınızı anlamak ve çözmek için pratik bilgiler.",
+      "Sigorta neden atar, elektrik kaçağı nasıl tespit edilir, topraklama zorunlu mu? Elektrik arızaları hakkında uzman rehberleri ve pratik çözüm önerileri.",
     alternates: { canonical: "/blog" },
   };
 }

@@ -1,14 +1,16 @@
 import Link from "next/link";
 import Image from "next/image";
-import { Calendar, Zap } from "lucide-react";
+import { Calendar, Clock, Zap } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { formatDateTr } from "@/lib/utils-format";
+import { calcReadingTime } from "@/lib/content-utils";
 
 interface BlogCardProps {
   post: {
     slug: string;
     title: string;
     excerpt: string;
+    content: string;
     coverImage?: string | null;
     tags: string;
     publishedAt?: Date | null;
@@ -25,6 +27,7 @@ export function BlogCard({ post, priority = false }: BlogCardProps) {
     .filter(Boolean)
     .slice(0, 2);
   const date = formatDateTr(post.publishedAt ?? post.updatedAt);
+  const readingTime = calcReadingTime(post.content);
 
   return (
     <article className="group relative flex h-full flex-col overflow-hidden rounded-xl border border-border bg-card shadow-sm transition-shadow hover:shadow-md">
@@ -67,11 +70,17 @@ export function BlogCard({ post, priority = false }: BlogCardProps) {
         <p className="mt-2 line-clamp-2 text-sm leading-relaxed text-muted-foreground">
           {post.excerpt}
         </p>
-        <p className="mt-auto flex items-center gap-1.5 pt-4 text-xs text-muted-foreground">
-          <Calendar className="size-3.5 shrink-0" aria-hidden="true" />
-          <time dateTime={(post.publishedAt ?? post.updatedAt).toISOString()}>
-            {date}
-          </time>
+        <p className="mt-auto flex flex-wrap items-center gap-x-3 gap-y-1 pt-4 text-xs text-muted-foreground">
+          <span className="flex items-center gap-1.5">
+            <Calendar className="size-3.5 shrink-0" aria-hidden="true" />
+            <time dateTime={(post.publishedAt ?? post.updatedAt).toISOString()}>
+              {date}
+            </time>
+          </span>
+          <span className="flex items-center gap-1.5">
+            <Clock className="size-3.5 shrink-0" aria-hidden="true" />
+            {readingTime} dk okuma
+          </span>
         </p>
       </div>
     </article>

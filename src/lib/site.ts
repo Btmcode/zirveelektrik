@@ -10,7 +10,7 @@ export const SITE = {
   city: "İstanbul",
   region: "İstanbul",
   description:
-    "İstanbul genelinde 7/24 elektrikçi ve elektrik arıza tespiti hizmeti. Sigorta, pano, topraklama, aydınlatma ve tüm elektrik arızalarında aynı gün servis.",
+    "İstanbul genelinde 7/24 acil ve nöbetçi elektrikçi hizmeti. Sigorta, pano, topraklama, aydınlatma ve tüm elektrik arızalarında aynı gün servis, yerinde arıza tespiti.",
   shortDescription:
     "İstanbul'da 7/24 acil elektrikçi. Arıza tespiti, onarım ve tesisat hizmetlerinde güvenilir çözüm.",
   // Gerçek iletişim bilgileri (admin panelinden değiştirilebilir)
@@ -41,19 +41,36 @@ export const MAPS_EMBED_URL = `https://www.google.com/maps?q=${encodeURIComponen
 export const MAPS_DIRECTIONS_URL = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(FULL_ADDRESS)}`;
 
 export const DEFAULT_META = {
-  title: "Zirve Elektrik | İstanbul 7/24 Acil Elektrikçi - Arıza Tespiti",
+  title: "İstanbul 7/24 Acil Nöbetçi Elektrikçi | Zirve Elektrik",
   titleTemplate: "%s | Zirve Elektrik",
-  description: SITE.description,
+  description:
+    "İstanbul'un tüm ilçelerinde 7/24 acil elektrikçi. Sigorta atıyor, elektrik kaçağı, pano arızası mı? Aynı gün servis, yerinde tespit, şeffaf fiyat. Hemen ara: 0537 720 13 45",
   keywords: [
+    // Çekirdek niyet kelimeleri
     "istanbul elektrikçi",
-    "acil elektrikçi",
-    "7/24 elektrikçi",
+    "acil elektrikçi istanbul",
+    "7/24 acil elektrikçi",
+    "nöbetçi elektrikçi istanbul",
+    "en yakın elektrikçi",
+    "yakınımdaki elektrikçi",
+    "gece elektrikçisi",
+    "hafta sonu elektrikçi",
+    "aynı gün elektrikçi",
+    // Arıza-anı aramaları
     "elektrik arıza tespiti",
-    "nöbetçi elektrikçi",
-    "elektrikçi fiyatları",
     "sigorta arızası",
+    "sigorta sürekli atıyor",
+    "şalter atıyor",
+    "elektrik kaçağı tespiti ücreti",
+    "sigorta kutusu değişimi",
     "elektrik panosu",
     "topraklama",
+    // Ticari niyet
+    "elektrikçi fiyatları",
+    "elektrikçi fiyatları 2026",
+    "elektrikçi telefonu istanbul",
+    "elektrikçi sultangazi",
+    // Marka
     "zirve elektrik",
   ],
 };

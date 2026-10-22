@@ -178,6 +178,39 @@ export default function CookiePolicyPage() {
           ),
         },
         {
+          id: "onay-sistemi",
+          title: "Çerez Onay Sistemi",
+          body: (
+            <>
+              <p>
+                Sitemize ilk ziyaretinizde ekranın altında bir{" "}
+                <strong>çerez tercih penceresi</strong> görüntülenir:
+              </p>
+              <LegalList
+                items={[
+                  <>
+                    <strong>"Tümüne İzin Ver":</strong> İsteğe bağlı çerezler
+                    (ölçümleme, deneyim iyileştirme) için rıza verirsiniz.
+                  </>,
+                  <>
+                    <strong>"Yalnızca Zorunlu Çerezler":</strong> Yalnızca sitenin
+                    çalışması için gerekli çerezler kullanılır.
+                  </>,
+                  <>
+                    Tercihiniz cihazınızda saklanır; dilediğiniz zaman{" "}
+                    <strong>tarayıcı depolama ayarlarından</strong> bu tercihi
+                    silip yeniden seçim yapabilirsiniz.
+                  </>,
+                ]}
+              />
+              <p>
+                Zorunlu olmayan çerezler, rızanız onaylanmadan hiçbir
+                şekilde yüklenmez veya okunmaz.
+              </p>
+            </>
+          ),
+        },
+        {
           id: "gelecek-degisiklikler",
           title: "Gelecekteki Değişiklikler ve Güncellemeler",
           body: (
@@ -185,10 +218,10 @@ export default function CookiePolicyPage() {
               <p>
                 İlerleyen dönemde sitemize analitik ölçümleme veya reklam
                 ölçümleme araçları eklenmesi hâlinde, bu araçların
-                oluşturacağı zorunlu olmayan çerezler için{" "}
-                <strong>ziyaretçilerden önceden açık rıza alınacak</strong> ve
-                siteye çerez onayı (consent) arayüzü eklenecektir. Bu politika
-                da güncellenerek yeniden yayımlanacaktır.
+                oluşturacağı zorunlu olmayan çerezler yalnızca çerez onay
+                penceresinden verdiğiniz <strong>açık rızanız kapsamında</strong>{" "}
+                devreye alınır. Bu politika da güncellenerek yeniden
+                yayımlanacaktır.
               </p>
               <p>
                 Kişisel verilerinizin işlenmesine ilişkin genel bilgilendirme

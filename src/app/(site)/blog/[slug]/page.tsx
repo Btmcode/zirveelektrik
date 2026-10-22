@@ -1,16 +1,23 @@
 import type { Metadata } from "next";
 import Image from "next/image";
+import Link from "next/link";
 import { notFound } from "next/navigation";
-import { CalendarDays, Tag, User } from "lucide-react";
+import { CalendarDays, Clock, ListTree, Tag, User } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Breadcrumbs } from "@/components/site/breadcrumbs";
 import { JsonLd } from "@/components/site/json-ld";
-import { MarkdownContent } from "@/components/site/markdown";
+import {
+  MarkdownContent,
+  createHeadingIdState,
+} from "@/components/site/markdown";
 import { BlogCard } from "@/components/site/blog-card";
 import { CtaBanner } from "@/components/site/cta-banner";
+import { ArticleCtaCard } from "@/components/site/article-cta-card";
+import { ReadingProgress } from "@/components/site/reading-progress";
 import { articleSchema } from "@/lib/schema";
 import { getPostBySlug, getPublishedPosts } from "@/lib/queries";
 import { formatDateTr } from "@/lib/utils-format";
+import { calcReadingTime, extractHeadings } from "@/lib/content-utils";
 
 export const dynamic = "force-dynamic";
 
@@ -55,18 +62,35 @@ export default async function BlogDetailPage({ params }: BlogDetailPageProps) {
     .map((tag) => tag.trim())
     .filter(Boolean);
 
-  const relatedPosts = allPosts
-    .filter(
-      (item) =>
-        item.slug !== post.slug &&
-        item.tags
-          .split(",")
-          .map((tag) => tag.trim())
-          .some((tag) => tag && postTags.includes(tag))
-    )
-    .slice(0, 3);
+  // İlgili yazılar: önce etiket eşleşmesi, eşleşme yoksa en yeni 3 yazı
+  const tagMatches = allPosts.filter(
+    (item) =>
+      item.slug !== post.slug &&
+      item.tags
+        .split(",")
+        .map((tag) => tag.trim())
+        .some((tag) => tag && postTags.includes(tag))
+  );
+  const relatedPosts =
+    tagMatches.length > 0
+      ? tagMatches.slice(0, 3)
+      : allPosts.filter((item) => item.slug !== post.slug).slice(0, 3);
 
   const publishDate = post.publishedAt ?? post.updatedAt;
+  const readingTime = calcReadingTime(post.content);
+
+  // İçindekiler: 3+ H2 başlık varsa göster
+  const toc = extractHeadings(post.content);
+  const showToc = toc.length >= 3;
+
+  // Yazıyı H2 sınırlarından ikiye böl: ortada dönüşüm CTA'sı gösterir
+  const sections = post.content.split(/(?=\n## )/);
+  const splitIndex = Math.ceil(sections.length / 2);
+  const canSplit = sections.length >= 4;
+  const firstHalf = canSplit ? sections.slice(0, splitIndex).join("") : null;
+  const secondHalf = canSplit ? sections.slice(splitIndex).join("") : null;
+  // İki parça aynı başlık id sayaç durumunu paylaşır (TOC eşleşmesi için)
+  const headingIdState = createHeadingIdState();
 
   return (
     <>
@@ -80,6 +104,7 @@ export default async function BlogDetailPage({ params }: BlogDetailPageProps) {
           author: post.author,
         })}
       />
+      <ReadingProgress />
       <Breadcrumbs
         items={[
           { name: "Blog", url: "/blog" },
@@ -109,15 +134,13 @@ export default async function BlogDetailPage({ params }: BlogDetailPageProps) {
               </time>
             </span>
             <span className="flex items-center gap-1.5">
+              <Clock className="size-4 text-primary" aria-hidden="true" />
+              {readingTime} dakikalık okuma
+            </span>
+            <span className="flex items-center gap-1.5">
               <User className="size-4 text-primary" aria-hidden="true" />
               {post.author}
             </span>
-            {postTags.length > 0 ? (
-              <span className="flex items-center gap-1.5">
-                <Tag className="size-4 text-primary" aria-hidden="true" />
-                {postTags.join(", ")}
-              </span>
-            ) : null}
           </div>
         </header>
 
@@ -134,8 +157,46 @@ export default async function BlogDetailPage({ params }: BlogDetailPageProps) {
           ) : null}
         </div>
 
+        {showToc ? (
+          <nav
+            aria-label="İçindekiler"
+            className="mt-8 rounded-xl border bg-accent/40 p-5"
+          >
+            <h2 className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-foreground">
+              <ListTree className="size-4 text-primary" aria-hidden="true" />
+              Bu Yazıda Neler Var?
+            </h2>
+            <ol className="mt-3 space-y-1.5 text-sm text-muted-foreground">
+              {toc.map((heading, index) => (
+                <li key={heading.id} className="flex gap-2">
+                  <span className="tabular-nums text-primary/70">
+                    {index + 1}.
+                  </span>
+                  <a
+                    href={`#${heading.id}`}
+                    className="transition-colors hover:text-primary"
+                  >
+                    {heading.text}
+                  </a>
+                </li>
+              ))}
+            </ol>
+          </nav>
+        ) : null}
+
         <div className="mt-8">
-          <MarkdownContent content={post.content} />
+          {canSplit && firstHalf && secondHalf ? (
+            <>
+              <MarkdownContent content={firstHalf} idState={headingIdState} />
+              <ArticleCtaCard />
+              <MarkdownContent content={secondHalf} idState={headingIdState} />
+            </>
+          ) : (
+            <>
+              <MarkdownContent content={post.content} idState={headingIdState} />
+              <ArticleCtaCard />
+            </>
+          )}
         </div>
       </article>
 
@@ -150,6 +211,16 @@ export default async function BlogDetailPage({ params }: BlogDetailPageProps) {
                 <BlogCard key={item.id} post={item} />
               ))}
             </div>
+            <p className="mt-8 text-sm text-muted-foreground">
+              Tüm rehberler için{" "}
+              <Link
+                href="/blog"
+                className="font-medium text-primary hover:underline"
+              >
+                blog sayfasına
+              </Link>{" "}
+              göz atabilirsiniz.
+            </p>
           </div>
         </section>
       ) : null}
