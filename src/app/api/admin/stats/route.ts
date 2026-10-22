@@ -26,7 +26,14 @@ export async function GET(request: Request) {
     ] = await Promise.all([
       db.serviceRequest.count(),
       db.serviceRequest.count({ where: { createdAt: { gte: startOfToday } } }),
-      db.serviceRequest.groupBy({ by: ["status"], _count: { _all: true } }),
+      // Not: Accelerate extension altında groupBy çıktısı generic '{}' olarak
+      // çıkar; satır yapısı bilindiği için açık tipleme ile daraltılır.
+      db.serviceRequest
+        .groupBy({ by: ["status"], _count: { _all: true } })
+        .then(
+          (rows) =>
+            rows as Array<{ status: string; _count: { _all: number } }>
+        ),
       db.serviceRequest.findMany({
         orderBy: { createdAt: "desc" },
         take: 8,

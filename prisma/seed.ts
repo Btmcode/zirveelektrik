@@ -4,13 +4,15 @@
  *
  * GÜVENLİK NOTU:
  * - Admin şifresi bcrypt ile hash'lenir, düz metin saklanmaz.
- * - Şifre ADMIN_PASSWORD env değişkeninden okunur; yoksa güçlü varsayılan kullanılır.
+ * - Şifre ADMIN_PASSWORD env değişkeninden okunur; yoksa seed bilinçli olarak durur.
  * - İlk girişten sonra admin panelinden şifre değiştirilmelidir (üyelik işlemleri).
  */
 import { PrismaClient } from "@prisma/client";
+import { withAccelerate } from "@prisma/extension-accelerate";
 import bcrypt from "bcryptjs";
 
-const prisma = new PrismaClient();
+// Prisma Postgres (prisma+postgres://) Accelerate extension gerektirir.
+const prisma = new PrismaClient().$extends(withAccelerate());
 
 // ---------- Yardımcılar ----------
 const g = (parts: TemplateStringsArray, ...vals: unknown[]) =>

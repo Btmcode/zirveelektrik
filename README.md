@@ -12,7 +12,7 @@ SEO/AEO odaklı, mobil öncelikli kurumsal site ve yönetim paneli.
 |---|---|
 | Framework | Next.js 16 (App Router, Turbopack) + TypeScript |
 | Arayüz | Tailwind CSS 4, shadcn/ui, Lucide |
-| Veritabanı | Prisma ORM + Neon Postgres (Vercel uyumlu) |
+| Veritabanı | Prisma ORM + Prisma Postgres (Vercel Storage, Accelerate) |
 | Kimlik doğrulama | JWT (jose) + HttpOnly cookie, bcrypt |
 | Çalışma zamanı | Bun |
 
@@ -24,7 +24,7 @@ bun install
 # .env.example dosyasını .env olarak kopyalayın ve değerleri doldurun
 cp .env.example .env
 
-bun run db:push          # şemayı uygula (Neon connection string gerektirir)
+bun run db:push          # şemayı uygula (Prisma Postgres bağlantı adresi gerektirir)
 bunx prisma db seed      # içerik + admin kullanıcısı
 bun run dev              # http://localhost:3000
 ```
@@ -66,16 +66,16 @@ db/                    # eski SQLite dosyaları (artık kullanılmıyor, repoya 
 ## Vercel Deploy
 
 1. **Repo bağlama:** [vercel.com/new](https://vercel.com/new) → `Btmcode/zirveelektrik` repo'sunu import edin (framework otomatik: Next.js).
-2. **Veritabanı:** Proje → **Storage** → **Neon (Postgres)** → Create → "Connect to project". `DATABASE_URL` otomatik eklenir.
+2. **Veritabanı:** "Optional Integrations" bölümünde **Prisma Postgres (Storage)** seçili bırakın → Deploy. Bağlantı adresi otomatik tanımlanır.
 3. **Ortam değişkenleri** (Project → Settings → Environment Variables):
-   - `DATABASE_URL` — Neon entegrasyonu otomatik ekler
+   - `DATABASE_URL` — Prisma Postgres entegrasyonunun verdiği bağlantı adresi (`prisma+postgres://...`); entegrasyon farklı adla eklediyse bu adla manuel ekleyin
    - `ADMIN_SESSION_SECRET` — **zorunlu** (en az 32 karakter; `openssl rand -base64 36`)
    - `ADMIN_EMAIL`, `ADMIN_PASSWORD` — yalnızca seed çalıştırmak için (runtime'da gerekmez)
 4. **Region:** `vercel.json` ile `fra1` (Frankfurt) sabitlenmiştir — İstanbul'a en düşük gecikme.
-5. **Seed (ilk kurulumda bir kez):** Neon connection string'i bilgisayarınıza alıp:
+5. **Seed (ilk kurulumda bir kez):** Prisma Postgres bağlantı adresini bilgisayarınıza alıp:
    ```bash
-   DATABASE_URL="postgresql://..." bun run db:push
-   DATABASE_URL="postgresql://..." bunx prisma db seed
+   DATABASE_URL="prisma+postgres://..." bun run db:push
+   DATABASE_URL="prisma+postgres://..." bunx prisma db seed
    ```
 6. **Domain:** Vercel → Settings → Domains → `zirveelektrik.net` + `www` ekleyin; DNS'te Vercel'in verdiği kayıtları girin.
 
