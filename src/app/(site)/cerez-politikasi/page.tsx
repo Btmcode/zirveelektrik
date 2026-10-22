@@ -13,7 +13,7 @@ export async function generateMetadata(): Promise<Metadata> {
   };
 }
 
-const LAST_UPDATED = "22.10.2026";
+const LAST_UPDATED = "23.10.2026";
 
 export default function CookiePolicyPage() {
   return (
@@ -50,9 +50,11 @@ export default function CookiePolicyPage() {
           body: (
             <>
               <p>
-                Sitemizde <strong>yalnızca zorunlu (teknik) çerezler</strong>{" "}
-                kullanılmaktadır. Reklam, hedefleme veya profil oluşturma
-                amaçlı çerez <strong>kullanılmamaktadır.</strong>
+                Sitemizde <strong>zorunlu (teknik) çerezler</strong> her zaman
+                kullanılır; zorunlu olmayan çerezler ise yalnızca çerez onay
+                penceresinden verdiğiniz <strong>açık rızanız</strong>
+                kapsamında devreye alınır. Reklam, hedefleme veya profil
+                oluşturma amaçlı çerez <strong>kullanılmamaktadır.</strong>
               </p>
               <div className="overflow-x-auto rounded-lg border">
                 <table className="w-full min-w-[480px] text-left text-sm">
@@ -107,10 +109,16 @@ export default function CookiePolicyPage() {
               <p>
                 <strong>İletişim</strong> sayfamızda, iş yerimizin konumunu
                 göstermek için Google Haritalar haritası gömülü olarak
-                kullanılmaktadır. Haritayı yüklediğinizde, Google çerezleri
-                yerleştirebilir ve bazı verileri kendi sunucularına
-                aktarabilir. Bu çerezler Google tarafından yönetilir ve
-                Google'ın gizlilik kurallarına tabidir:
+                kullanılmaktadır. Bu harita, harici bir Google servisidir ve
+                <strong> yalnızca fonksiyonel çerezlere izin vermeniz
+                hâlinde ya da "Haritayı Yükle" seçeneğine tıklamanız
+                hâlinde yüklenir.</strong> İzin vermediğiniz takdirde harita
+                yüklenmez ve Google'a hiçbir veri gönderilmez; adres bilgisi
+                metin olarak sayfada gösterilmeye devam eder. Haritayı
+                yüklediğinizde ise Google çerezleri yerleştirebilir ve bazı
+                verileri kendi sunucularına aktarabilir. Bu çerezler Google
+                tarafından yönetilir ve Google'ın gizlilik kurallarına
+                tabidir:
               </p>
               <LegalList
                 items={[
@@ -129,6 +137,10 @@ export default function CookiePolicyPage() {
                     Harita harici bir bağlantıdan yüklenir; Google'a gönderilen
                     veriler, haritayı görüntülediğiniz anda ve tarayıcı
                     ayarlarınıza bağlıdır.
+                  </>,
+                  <>
+                    "Yol Tarifi Al" bağlantısı yeni sekmede açılır; bu bağlantı
+                    çerez yerleştirmez.
                   </>,
                 ]}
               />
@@ -179,33 +191,69 @@ export default function CookiePolicyPage() {
         },
         {
           id: "onay-sistemi",
-          title: "Çerez Onay Sistemi",
+          title: "Çerez Onay Sistemi ve Tercihlerinizi Yönetme",
           body: (
             <>
               <p>
                 Sitemize ilk ziyaretinizde ekranın altında bir{" "}
-                <strong>çerez tercih penceresi</strong> görüntülenir:
+                <strong>çerez tercih penceresi</strong> görüntülenir. Pencereden
+                üç şekilde karar verebilirsiniz:
               </p>
               <LegalList
                 items={[
                   <>
-                    <strong>"Tümüne İzin Ver":</strong> İsteğe bağlı çerezler
-                    (ölçümleme, deneyim iyileştirme) için rıza verirsiniz.
+                    <strong>"Tümüne İzin Ver":</strong> Tüm isteğe bağlı çerez
+                    kategorilerine (fonksiyonel, ölçümleme, pazarlama) rıza
+                    verirsiniz.
                   </>,
                   <>
-                    <strong>"Yalnızca Zorunlu Çerezler":</strong> Yalnızca sitenin
-                    çalışması için gerekli çerezler kullanılır.
+                    <strong>"Yalnızca Zorunlu Çerezler":</strong> Yalnızca
+                    sitenin çalışması için gerekli çerezler kullanılır.
                   </>,
                   <>
-                    Tercihiniz cihazınızda saklanır; dilediğiniz zaman{" "}
-                    <strong>tarayıcı depolama ayarlarından</strong> bu tercihi
-                    silip yeniden seçim yapabilirsiniz.
+                    <strong>"Çerez Ayarları" (gelişmiş):</strong> Çerez
+                    kategorilerini <strong>tek tek seçmenizi</strong> sağlar.
+                    Zorunlu çerezler her zaman etkindir; diğer kategoriler
+                    varsayılan olarak kapalıdır, dilediğinizi açıp{" "}
+                    <strong>"Tercihleri Kaydet"</strong> ile onaylarsınız.
                   </>,
                 ]}
               />
               <p>
-                Zorunlu olmayan çerezler, rızanız onaylanmadan hiçbir
-                şekilde yüklenmez veya okunmaz.
+                Ayarlar bölümünde dört kategori görebilirsiniz:
+              </p>
+              <LegalList
+                items={[
+                  <>
+                    <strong>Zorunlu Çerezler:</strong> Her zaman etkin,
+                    kapatılamaz.
+                  </>,
+                  <>
+                    <strong>Fonksiyonel Çerezler:</strong> Google Haritalar
+                    gömmesi gibi içerikler için.
+                  </>,
+                  <>
+                    <strong>Ölçümleme (Analitik):</strong> Anonim sayfa
+                    ölçümlemesi (şu anda aktif araç yoktur).
+                  </>,
+                  <>
+                    <strong>Pazarlama (Reklam):</strong> Reklam ölçümleme (şu
+                    anda kullanılmamaktadır).
+                  </>,
+                ]}
+              />
+              <p>
+                Tercihinizi daha sonra değiştirmek için sayfanın en altındaki{" "}
+                <strong>"Çerez Ayarları"</strong> bağlantısını
+                kullanabilirsiniz; pencere yeniden açılır ve seçiminizi
+                güncelleyebilirsiniz. Bu, KVKK m.11 kapsamında rızanızı geri
+                alma hakkınızın kullanımını sağlar.
+              </p>
+              <p>
+                Tercihiniz <strong>yalnızca kendi cihazınızda</strong>{" "}
+                (tarayıcı yerel deposunda) saklanır; sunucumuza gönderilmez ve
+                kişisel veri olarak işlenmez. Zorunlu olmayan çerezler, rızanız
+                onaylanmadan hiçbir şekilde yüklenmez veya okunmaz.
               </p>
             </>
           ),

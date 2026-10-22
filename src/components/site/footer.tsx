@@ -14,6 +14,7 @@ import {
   Twitter,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { CookieSettingsButton } from "@/components/site/cookie-settings-button";
 import { getAllDistricts, getAllServices } from "@/lib/queries";
 import { getSettings, telHref, waHref } from "@/lib/settings";
 import { SITE } from "@/lib/site";
@@ -167,6 +168,9 @@ export async function Footer() {
                 </Link>
               </li>
             ))}
+            <li>
+              <CookieSettingsButton className="text-zinc-400 transition-colors hover:text-primary" />
+            </li>
           </ul>
         </nav>
 
@@ -273,6 +277,12 @@ export async function Footer() {
                   </Link>
                 </li>
               ))}
+              <li className="flex items-center">
+                <span aria-hidden="true" className="mx-1.5 text-zinc-700">
+                  •
+                </span>
+                <CookieSettingsButton className="text-zinc-400 transition-colors hover:text-primary" />
+              </li>
             </ul>
           </nav>
         </div>

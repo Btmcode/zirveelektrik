@@ -14,6 +14,7 @@ import { Breadcrumbs } from "@/components/site/breadcrumbs";
 import { JsonLd } from "@/components/site/json-ld";
 import { FaqAccordion } from "@/components/site/faq-accordion";
 import { RequestForm } from "@/components/site/request-form";
+import { MapEmbed } from "@/components/site/map-embed";
 import { CtaBanner } from "@/components/site/cta-banner";
 import { getActiveFaqs, getDistrictNames, getServiceTitles } from "@/lib/queries";
 import { getSettings, telHref, waHref } from "@/lib/settings";
@@ -153,13 +154,9 @@ export default async function ContactPage() {
             </Card>
 
             <Card className="overflow-hidden p-0">
-              <iframe
-                src={MAPS_EMBED_URL}
-                title="Zirve Elektrik konumu - Google Haritalar"
-                loading="lazy"
-                referrerPolicy="no-referrer-when-downgrade"
-                className="h-56 w-full border-0 sm:h-64"
-                allowFullScreen
+              <MapEmbed
+                embedUrl={MAPS_EMBED_URL}
+                directionsUrl={MAPS_DIRECTIONS_URL}
               />
               <div className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
                 <p className="min-w-0 text-sm text-muted-foreground">

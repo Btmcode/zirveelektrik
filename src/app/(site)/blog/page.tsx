@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
 import { Breadcrumbs } from "@/components/site/breadcrumbs";
-import { BlogCard } from "@/components/site/blog-card";
+import { BlogExplorer, type ExplorerPost } from "@/components/site/blog-explorer";
 import { CtaBanner } from "@/components/site/cta-banner";
 import { SectionHeading } from "@/components/site/section-heading";
+import { calcReadingTime } from "@/lib/content-utils";
 import { getPublishedPosts } from "@/lib/queries";
 
 export const dynamic = "force-dynamic";
@@ -19,6 +20,19 @@ export async function generateMetadata(): Promise<Metadata> {
 export default async function BlogPage() {
   const posts = await getPublishedPosts();
 
+  // İçeriği istemciye taşımamak için okuma süresi sunucuda hesaplanır
+  const explorerPosts: ExplorerPost[] = posts.map((post) => ({
+    id: post.id,
+    slug: post.slug,
+    title: post.title,
+    excerpt: post.excerpt,
+    coverImage: post.coverImage,
+    tags: post.tags,
+    publishedAt: post.publishedAt,
+    updatedAt: post.updatedAt,
+    readingTime: calcReadingTime(post.content),
+  }));
+
   return (
     <>
       <Breadcrumbs items={[{ name: "Blog", url: "/blog" }]} />
@@ -26,14 +40,10 @@ export default async function BlogPage() {
         <SectionHeading
           eyebrow="Blog"
           title="Elektrik Rehberi"
-          description="Ev ve iş yerinizdeki elektrik sorunlarını anlamak için uzman ekibimizden pratik rehberler ve çözüm önerileri."
+          description="Ev ve iş yerinizdeki elektrik sorunlarını anlamak için uzman ekibimizden pratik rehberler ve çözüm önerileri. Aradığınız konuyu aramak veya etiketle filtrelemek için araç çubuğunu kullanabilirsiniz."
         />
-        {posts.length > 0 ? (
-          <div className="grid gap-4 sm:grid-cols-2 md:gap-6 lg:grid-cols-3">
-            {posts.map((post, index) => (
-              <BlogCard key={post.id} post={post} priority={index < 3} />
-            ))}
-          </div>
+        {explorerPosts.length > 0 ? (
+          <BlogExplorer posts={explorerPosts} />
         ) : (
           <p className="rounded-xl border border-border bg-card p-10 text-center text-muted-foreground">
             Yakında yeni yazılar eklenecek.

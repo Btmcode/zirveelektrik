@@ -10,11 +10,13 @@ interface BlogCardProps {
     slug: string;
     title: string;
     excerpt: string;
-    content: string;
+    content?: string;
     coverImage?: string | null;
     tags: string;
-    publishedAt?: Date | null;
-    updatedAt: Date;
+    publishedAt?: Date | string | null;
+    updatedAt: Date | string;
+    /** Sunucuda hesaplanmışsa content'i istemciye taşımamak için override. */
+    readingTime?: number;
   };
   priority?: boolean;
 }
@@ -27,7 +29,7 @@ export function BlogCard({ post, priority = false }: BlogCardProps) {
     .filter(Boolean)
     .slice(0, 2);
   const date = formatDateTr(post.publishedAt ?? post.updatedAt);
-  const readingTime = calcReadingTime(post.content);
+  const readingTime = post.readingTime ?? calcReadingTime(post.content ?? "");
 
   return (
     <article className="group relative flex h-full flex-col overflow-hidden rounded-xl border border-border bg-card shadow-sm transition-shadow hover:shadow-md">
