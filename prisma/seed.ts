@@ -8,11 +8,13 @@
  * - İlk girişten sonra admin panelinden şifre değiştirilmelidir (üyelik işlemleri).
  */
 import { PrismaClient } from "@prisma/client";
-import { withAccelerate } from "@prisma/extension-accelerate";
 import bcrypt from "bcryptjs";
 
-// Prisma Postgres (prisma+postgres://) Accelerate extension gerektirir.
-const prisma = new PrismaClient().$extends(withAccelerate());
+// Prisma Postgres'e doğrudan bağlantı. Vercel entegrasyonu "postgres://"
+// şeması verebilir; Prisma yalnızca "postgresql://" kabul eder → normalize et.
+const rawUrl = process.env.DATABASE_URL;
+const datasourceUrl = rawUrl ? rawUrl.replace(/^postgres:\/\//, "postgresql://") : undefined;
+const prisma = new PrismaClient({ datasourceUrl });
 
 // ---------- Yardımcılar ----------
 const g = (parts: TemplateStringsArray, ...vals: unknown[]) =>
