@@ -1,13 +1,21 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
-import { CheckCircle2, ChevronDown, Loader2, Send, ShieldCheck } from "lucide-react";
+import {
+  CheckCircle2,
+  ChevronDown,
+  ExternalLink,
+  Loader2,
+  Send,
+} from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Form,
   FormControl,
@@ -56,6 +64,7 @@ export function RequestForm({ districts, services }: RequestFormProps) {
       district: "",
       serviceType: "",
       message: "",
+      kvkkConsent: false,
     },
   });
 
@@ -279,6 +288,48 @@ export function RequestForm({ districts, services }: RequestFormProps) {
             )}
           />
 
+          <FormField
+            control={form.control}
+            name="kvkkConsent"
+            render={({ field }) => (
+              <FormItem>
+                <div className="flex items-start gap-3 rounded-lg border bg-muted/40 p-4">
+                  <FormControl>
+                    <Checkbox
+                      id="kvkk-consent"
+                      checked={field.value}
+                      onChange={(e) => field.onChange(e.target.checked)}
+                      className="mt-0.5"
+                    />
+                  </FormControl>
+                  <div className="space-y-2">
+                    <label
+                      htmlFor="kvkk-consent"
+                      className="block cursor-pointer text-xs leading-relaxed text-muted-foreground sm:text-sm"
+                    >
+                      <span className="font-medium text-foreground">
+                        KVKK Aydınlatma Metni'ni okudum.
+                      </span>{" "}
+                      Ad soyad, telefon ve adres bilgilerimin, arıza talebime
+                      dönüş yapılması ve hizmetin sunulması amacıyla KVKK
+                      kapsamında işlenmesine onay veriyorum. Verilerim üçüncü
+                      kişilere ticari amaçla verilmez.
+                    </label>
+                    <Link
+                      href="/gizlilik-politikasi"
+                      target="_blank"
+                      className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline"
+                    >
+                      Aydınlatma Metni'ni okumak için tıklayın
+                      <ExternalLink className="size-3" aria-hidden="true" />
+                    </Link>
+                  </div>
+                </div>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
           <Button
             type="submit"
             size="lg"
@@ -297,15 +348,6 @@ export function RequestForm({ districts, services }: RequestFormProps) {
               </>
             )}
           </Button>
-
-          <p className="flex items-start gap-2 text-xs leading-relaxed text-muted-foreground">
-            <ShieldCheck
-              className="mt-0.5 size-3.5 shrink-0 text-primary"
-              aria-hidden="true"
-            />
-            KVKK kapsamında iletişim bilgileriniz yalnızca talebinizi yanıtlamak
-            amacıyla işlenir, üçüncü kişilerle paylaşılmaz.
-          </p>
         </form>
       </Form>
     </Card>

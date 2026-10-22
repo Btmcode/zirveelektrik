@@ -25,6 +25,17 @@ export const serviceRequestSchema = z.object({
   district: z.string().trim().min(2, "İlçe seçiniz").max(60),
   serviceType: z.string().trim().max(100).optional().default(""),
   message: z.string().trim().min(10, "Arızayı kısaca anlatın (en az 10 karakter)").max(2000),
+  // KVKK m.10: aydınlatma metni bilgilendirmesinin onaylandığına dair aktif rıza.
+  // boolean + refine: RHF defaultValues tipi (false) ile uyumludur.
+  kvkkConsent: z
+    .boolean({
+      errorMap: () => ({
+        message: "Devam etmek için KVKK Aydınlatma Metni'ni onaylamalısınız",
+      }),
+    })
+    .refine((v) => v === true, {
+      message: "Devam etmek için KVKK Aydınlatma Metni'ni onaylamalısınız",
+    }),
 });
 
 export type ServiceRequestInput = z.infer<typeof serviceRequestSchema>;

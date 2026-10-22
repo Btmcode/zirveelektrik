@@ -21,6 +21,13 @@ const SOCIAL_LINKS = [
   { href: SITE.social.x, label: "X (Twitter)", icon: Twitter },
 ];
 
+/** Alt bardaki yasal sayfa bağlantıları (Türkiye mevzuatı uygunluğu). */
+const LEGAL_LINKS = [
+  { href: "/gizlilik-politikasi", label: "Gizlilik & KVKK" },
+  { href: "/cerez-politikasi", label: "Çerez Politikası" },
+  { href: "/kullanim-kosullari", label: "Kullanım Koşulları" },
+] as const;
+
 export async function Footer() {
   const [settings, services, districts] = await Promise.all([
     getSettings(),
@@ -162,10 +169,29 @@ export async function Footer() {
 
       {/* Alt bar - mobilde çağrı çubuğu için ek boşluk (DESIGN.md §5) */}
       <div className="border-t border-zinc-800">
-        <div className="mx-auto flex max-w-7xl flex-col items-center justify-center gap-2 px-4 pb-24 pt-6 text-xs text-zinc-500 sm:flex-row sm:px-6 md:pb-6 lg:px-8">
+        <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-3 px-4 pb-24 pt-6 text-xs text-zinc-500 sm:flex-row sm:px-6 md:pb-6 lg:px-8">
           <p>
             © {year} Zirve Elektrik - zirveelektrik.net. Tüm hakları saklıdır.
           </p>
+          <nav aria-label="Yasal sayfalar">
+            <ul className="flex flex-wrap items-center justify-center gap-x-1 gap-y-1">
+              {LEGAL_LINKS.map((link, index) => (
+                <li key={link.href} className="flex items-center">
+                  {index > 0 && (
+                    <span aria-hidden="true" className="mx-1.5 text-zinc-700">
+                      •
+                    </span>
+                  )}
+                  <Link
+                    href={link.href}
+                    className="text-zinc-400 transition-colors hover:text-primary"
+                  >
+                    {link.label}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </nav>
         </div>
       </div>
     </footer>

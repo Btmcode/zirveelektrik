@@ -17,6 +17,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${SITE.url}/sss`, changeFrequency: "monthly", priority: 0.6 },
     { url: `${SITE.url}/hakkimizda`, changeFrequency: "yearly", priority: 0.5 },
     { url: `${SITE.url}/iletisim`, changeFrequency: "yearly", priority: 0.9 },
+    // Yasal sayfalar - Türkiye mevzuatı (KVKK, çerez) uygunluğu
+    { url: `${SITE.url}/gizlilik-politikasi`, changeFrequency: "yearly", priority: 0.3 },
+    { url: `${SITE.url}/cerez-politikasi`, changeFrequency: "yearly", priority: 0.3 },
+    { url: `${SITE.url}/kullanim-kosullari`, changeFrequency: "yearly", priority: 0.3 },
   ];
 
   try {
