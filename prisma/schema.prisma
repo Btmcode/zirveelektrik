@@ -1,0 +1,123 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ---------- Yönetim ----------
+
+model AdminUser {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  name         String
+  role         String   @default("ADMIN") // ADMIN | EDITOR
+  lastLoginAt  DateTime?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+// ---------- Site içerikleri ----------
+
+model Service {
+  id              String   @id @default(cuid())
+  slug            String   @unique
+  title           String
+  excerpt         String
+  content         String // markdown
+  icon            String   @default("Zap") // lucide ikon adı
+  priceNote       String?
+  imageUrl        String?
+  featured        Boolean  @default(false)
+  active          Boolean  @default(true)
+  sortOrder       Int      @default(0)
+  metaTitle       String?
+  metaDescription String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model BlogPost {
+  id              String    @id @default(cuid())
+  slug            String    @unique
+  title           String
+  excerpt         String
+  content         String // markdown
+  coverImage      String?
+  author          String    @default("Zirve Elektrik Editör")
+  tags            String    @default("") // virgülle ayrılmış
+  published       Boolean   @default(false)
+  publishedAt     DateTime?
+  metaTitle       String?
+  metaDescription String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+}
+
+model District {
+  id              String   @id @default(cuid())
+  slug            String   @unique
+  name            String
+  content         String // markdown
+  neighborhoods   String   @default("") // satır bazlı liste
+  side            String   @default("AVRUPA") // AVRUPA | ANADOLU
+  active          Boolean  @default(true)
+  metaTitle       String?
+  metaDescription String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model Testimonial {
+  id        String   @id @default(cuid())
+  name      String
+  district  String
+  content   String
+  rating    Int      @default(5) // 1-5
+  approved  Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Faq {
+  id        String   @id @default(cuid())
+  question  String
+  answer    String
+  category  String   @default("GENEL") // GENEL | FIYAT | HIZMET | GARANTI
+  sortOrder Int      @default(0)
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// ---------- Talepler ----------
+
+model ServiceRequest {
+  id          String    @id @default(cuid())
+  code        String    @unique // ZR-XXXXXX kısa takip kodu
+  name        String
+  phone       String
+  address     String
+  district    String
+  serviceType String?
+  message     String
+  status      String    @default("NEW") // NEW | CONTACTED | SCHEDULED | COMPLETED | CANCELLED
+  notes       String?
+  source      String    @default("WEBSITE") // WEBSITE | WHATSAPP | PHONE
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+// ---------- Ayarlar ----------
+
+model Setting {
+  key       String   @id
+  value     String
+  updatedAt DateTime @updatedAt
+}
