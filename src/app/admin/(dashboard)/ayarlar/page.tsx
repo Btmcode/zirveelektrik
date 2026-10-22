@@ -67,7 +67,8 @@ export default function AdminSettingsPage() {
   });
 
   const load = useCallback(async () => {
-    setLoading(true);
+    // Not: ilk yüklemede loading zaten true başlar; tüm setState'ler await
+    // SONRASINDA yapılır (react-hooks/set-state-in-effect kuralı).
     try {
       const data = await apiFetch<{ settings: SettingsData }>("/api/admin/settings");
       settingsForm.reset({

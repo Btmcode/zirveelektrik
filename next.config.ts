@@ -9,14 +9,22 @@ const securityHeaders = [
     key: "Permissions-Policy",
     value: "camera=(), microphone=(), geolocation=(self), payment=()",
   },
-  // Not: Sandbox önizleme paneli iframe'de çalıştığı için geliştirme aşamasında
-  // X-Frame-Options / frame-ancestors bilinçli olarak eklenmedi (SCW kuralı:
-  // iframe embedding varsa geliştirmede gevşetilir). Prodde eklenebilir.
   {
     key: "Strict-Transport-Security",
     value: "max-age=63072000; includeSubDomains; preload",
   },
 ];
+
+// Clickjacking koruması (frame-ancestors + X-Frame-Options): yalnızca PRODUCTION'da.
+// Geliştirmede sandbox önizleme paneli iframe ile çalıştığı için bilinçli olarak
+// eklenmez (bkz. Task 9 notu); canlıya çıkarken aktif olur.
+if (process.env.NODE_ENV === "production") {
+  securityHeaders.push({
+    key: "Content-Security-Policy",
+    value: "frame-ancestors 'none'",
+  });
+  securityHeaders.push({ key: "X-Frame-Options", value: "DENY" });
+}
 
 const nextConfig: NextConfig = {
   // Not: output: "standalone" yalnızca kendi sunucusunda barındırma içindir;

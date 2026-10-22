@@ -103,21 +103,34 @@ export default function AdminTestimonialsPage() {
     defaultValues: EMPTY_VALUES,
   });
 
+  // Liste yenileme (mutasyon sonrası sessiz tazeleme)
   const load = useCallback(async () => {
-    setLoading(true);
     try {
       const data = await apiFetch<{ testimonials: AdminTestimonial[] }>("/api/admin/testimonials");
       setTestimonials(data.testimonials);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Yorumlar yüklenemedi");
-    } finally {
-      setLoading(false);
     }
   }, []);
 
   useEffect(() => {
-    load();
-  }, [load]);
+    // İlk yükleme: React'in önerilen async-fetch-in-effect deseni
+    // (setState'ler await sonrasında + unmount koruması).
+    let active = true;
+    void (async () => {
+      try {
+        const data = await apiFetch<{ testimonials: AdminTestimonial[] }>("/api/admin/testimonials");
+        if (active) setTestimonials(data.testimonials);
+      } catch (error) {
+        toast.error(error instanceof Error ? error.message : "Yorumlar yüklenemedi");
+      } finally {
+        if (active) setLoading(false);
+      }
+    })();
+    return () => {
+      active = false;
+    };
+  }, []);
 
   function openCreate() {
     setEditing(null);

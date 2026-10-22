@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import {
   Inbox,
@@ -69,7 +69,8 @@ export default function AdminDashboardPage() {
   const [data, setData] = useState<StatsData | null>(null);
   const [loading, setLoading] = useState(true);
 
-  async function load() {
+  // "Tekrar Dene" butonu için (event handler bağlamı — setLoading(true) burada serbest)
+  const load = useCallback(async () => {
     setLoading(true);
     try {
       const stats = await apiFetch<StatsData>("/api/admin/stats");
@@ -79,10 +80,25 @@ export default function AdminDashboardPage() {
     } finally {
       setLoading(false);
     }
-  }
+  }, []);
 
   useEffect(() => {
-    load();
+    // İlk veri yükleme: React'in önerilen async-fetch-in-effect deseni
+    // (setState'ler await sonrasında + unmount koruması).
+    let active = true;
+    void (async () => {
+      try {
+        const stats = await apiFetch<StatsData>("/api/admin/stats");
+        if (active) setData(stats);
+      } catch (error) {
+        toast.error(error instanceof Error ? error.message : "İstatistikler yüklenemedi");
+      } finally {
+        if (active) setLoading(false);
+      }
+    })();
+    return () => {
+      active = false;
+    };
   }, []);
 
   if (loading) {

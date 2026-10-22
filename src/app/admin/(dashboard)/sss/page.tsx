@@ -101,21 +101,34 @@ export default function AdminFaqPage() {
     defaultValues: EMPTY_VALUES,
   });
 
+  // Liste yenileme (mutasyon sonrası sessiz tazeleme)
   const load = useCallback(async () => {
-    setLoading(true);
     try {
       const data = await apiFetch<{ faqs: AdminFaq[] }>("/api/admin/faqs");
       setFaqs(data.faqs);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "SSS kayıtları yüklenemedi");
-    } finally {
-      setLoading(false);
     }
   }, []);
 
   useEffect(() => {
-    load();
-  }, [load]);
+    // İlk yükleme: React'in önerilen async-fetch-in-effect deseni
+    // (setState'ler await sonrasında + unmount koruması).
+    let active = true;
+    void (async () => {
+      try {
+        const data = await apiFetch<{ faqs: AdminFaq[] }>("/api/admin/faqs");
+        if (active) setFaqs(data.faqs);
+      } catch (error) {
+        toast.error(error instanceof Error ? error.message : "SSS kayıtları yüklenemedi");
+      } finally {
+        if (active) setLoading(false);
+      }
+    })();
+    return () => {
+      active = false;
+    };
+  }, []);
 
   function openCreate() {
     setEditing(null);
