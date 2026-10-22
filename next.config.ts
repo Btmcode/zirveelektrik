@@ -19,7 +19,8 @@ const securityHeaders = [
 ];
 
 const nextConfig: NextConfig = {
-  output: "standalone",
+  // Not: output: "standalone" yalnızca kendi sunucusunda barındırma içindir;
+  // Vercel kendi build pipeline'ını kullandığı için kaldırıldı.
   typescript: {
     ignoreBuildErrors: true,
   },

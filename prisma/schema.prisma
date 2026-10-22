@@ -6,7 +6,9 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  // Vercel (Neon Postgres) uyumlu sağlayıcı. Yerel geliştirme de aynı
+  // connection string ile Neon'a bağlanır (sandbox'ta 5432 outbound açık).
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 

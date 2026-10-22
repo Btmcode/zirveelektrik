@@ -12,7 +12,7 @@ SEO/AEO odaklı, mobil öncelikli kurumsal site ve yönetim paneli.
 |---|---|
 | Framework | Next.js 16 (App Router, Turbopack) + TypeScript |
 | Arayüz | Tailwind CSS 4, shadcn/ui, Lucide |
-| Veritabanı | Prisma ORM + SQLite |
+| Veritabanı | Prisma ORM + Neon Postgres (Vercel uyumlu) |
 | Kimlik doğrulama | JWT (jose) + HttpOnly cookie, bcrypt |
 | Çalışma zamanı | Bun |
 
@@ -21,15 +21,10 @@ SEO/AEO odaklı, mobil öncelikli kurumsal site ve yönetim paneli.
 ```bash
 bun install
 
-# .env dosyası oluşturun (repo içinde .env.example yoktur, aşağıdaki değişkenler zorunlu)
-cat > .env << 'EOF'
-DATABASE_URL=file:./db/custom.db
-ADMIN_EMAIL=<panel-e-postanız>
-ADMIN_PASSWORD=<güçlü-şifre>
-ADMIN_SESSION_SECRET=<openssl rand -base64 36 ile üretilmiş değer>
-EOF
+# .env.example dosyasını .env olarak kopyalayın ve değerleri doldurun
+cp .env.example .env
 
-bun run db:push          # şemayı uygula
+bun run db:push          # şemayı uygula (Neon connection string gerektirir)
 bunx prisma db seed      # içerik + admin kullanıcısı
 bun run dev              # http://localhost:3000
 ```
@@ -39,7 +34,7 @@ bun run dev              # http://localhost:3000
 
 ## Yönetim Paneli
 
-Panel yolu gizlidir (`ADMIN_PATH` env / `src/lib/admin-path.ts`).
+Panel yolu gizlidir (`src/lib/admin-path.ts` içindeki `ADMIN_LOGIN_PATH` sabiti).
 Giriş: `ADMIN_EMAIL` + `ADMIN_PASSWORD` ile seed edilen kullanıcı.
 
 - Talepler: gelen arıza bildirimleri, durum yönetimi, notlar
@@ -65,8 +60,27 @@ src/components/site/   # site bileşenleri (header, hero, form, footer...)
 src/components/admin/  # panel bileşenleri
 src/lib/               # schema.org, auth, settings, validation
 prisma/                # şema + seed
-db/                    # SQLite dosyası (repoya girmez, seed ile yeniden üretilir)
+db/                    # eski SQLite dosyaları (artık kullanılmıyor, repoya girmez)
 ```
+
+## Vercel Deploy
+
+1. **Repo bağlama:** [vercel.com/new](https://vercel.com/new) → `Btmcode/zirveelektrik` repo'sunu import edin (framework otomatik: Next.js).
+2. **Veritabanı:** Proje → **Storage** → **Neon (Postgres)** → Create → "Connect to project". `DATABASE_URL` otomatik eklenir.
+3. **Ortam değişkenleri** (Project → Settings → Environment Variables):
+   - `DATABASE_URL` — Neon entegrasyonu otomatik ekler
+   - `ADMIN_SESSION_SECRET` — **zorunlu** (en az 32 karakter; `openssl rand -base64 36`)
+   - `ADMIN_EMAIL`, `ADMIN_PASSWORD` — yalnızca seed çalıştırmak için (runtime'da gerekmez)
+4. **Region:** `vercel.json` ile `fra1` (Frankfurt) sabitlenmiştir — İstanbul'a en düşük gecikme.
+5. **Seed (ilk kurulumda bir kez):** Neon connection string'i bilgisayarınıza alıp:
+   ```bash
+   DATABASE_URL="postgresql://..." bun run db:push
+   DATABASE_URL="postgresql://..." bunx prisma db seed
+   ```
+6. **Domain:** Vercel → Settings → Domains → `zirveelektrik.net` + `www` ekleyin; DNS'te Vercel'in verdiği kayıtları girin.
+
+> Not: Tüm içerik sayfaları `force-dynamic` render edilir; build sırasında veritabanı
+> bağlantısı gerekmez. Ayar değişiklikleri anında yayına yansır.
 
 ## Notlar
 
