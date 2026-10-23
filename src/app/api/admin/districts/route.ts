@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
+import { clearCacheByPrefix } from "@/lib/cache";
 import { districtUpsertSchema } from "@/lib/validation";
 import { isUniqueConstraintError, jsonError, requireAdmin, unexpectedError, zodErrorResponse } from "../_guard";
 
@@ -36,6 +37,7 @@ export async function POST(request: Request) {
     const data = districtUpsertSchema.parse(body);
 
     const district = await db.district.create({ data });
+    clearCacheByPrefix("dist");
     return NextResponse.json({ district }, { status: 201 });
   } catch (error) {
     if (isUniqueConstraintError(error)) {

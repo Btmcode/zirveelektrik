@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
+import { clearCacheByPrefix } from "@/lib/cache";
 import { districtUpsertSchema } from "@/lib/validation";
 import { isUniqueConstraintError, jsonError, requireAdmin, unexpectedError, zodErrorResponse } from "../../_guard";
 
@@ -31,6 +32,7 @@ export async function PATCH(request: Request, ctx: Ctx) {
     }
 
     const district = await db.district.update({ where: { id }, data });
+    clearCacheByPrefix("dist");
     return NextResponse.json({ district });
   } catch (error) {
     if (isUniqueConstraintError(error)) {
@@ -53,6 +55,7 @@ export async function DELETE(request: Request, ctx: Ctx) {
     }
 
     await db.district.delete({ where: { id } });
+    clearCacheByPrefix("dist");
     return NextResponse.json({ ok: true });
   } catch (error) {
     return unexpectedError(error);

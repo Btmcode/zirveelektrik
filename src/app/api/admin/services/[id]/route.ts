@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
+import { clearCacheByPrefix } from "@/lib/cache";
 import { serviceUpsertSchema } from "@/lib/validation";
 import { isUniqueConstraintError, jsonError, requireAdmin, unexpectedError, zodErrorResponse } from "../../_guard";
 
@@ -31,6 +32,7 @@ export async function PATCH(request: Request, ctx: Ctx) {
     }
 
     const service = await db.service.update({ where: { id }, data });
+    clearCacheByPrefix("svc");
     return NextResponse.json({ service });
   } catch (error) {
     if (isUniqueConstraintError(error)) {
@@ -53,6 +55,7 @@ export async function DELETE(request: Request, ctx: Ctx) {
     }
 
     await db.service.delete({ where: { id } });
+    clearCacheByPrefix("svc");
     return NextResponse.json({ ok: true });
   } catch (error) {
     return unexpectedError(error);

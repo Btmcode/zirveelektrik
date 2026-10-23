@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
+import { clearCacheByPrefix } from "@/lib/cache";
 import { serviceUpsertSchema } from "@/lib/validation";
 import { isUniqueConstraintError, jsonError, requireAdmin, unexpectedError, zodErrorResponse } from "../_guard";
 
@@ -36,6 +37,7 @@ export async function POST(request: Request) {
     const data = serviceUpsertSchema.parse(body);
 
     const service = await db.service.create({ data });
+    clearCacheByPrefix("svc");
     return NextResponse.json({ service }, { status: 201 });
   } catch (error) {
     if (isUniqueConstraintError(error)) {

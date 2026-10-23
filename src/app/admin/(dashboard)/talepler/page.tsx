@@ -11,6 +11,8 @@ import {
   Loader2,
   Trash2,
   Save,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import { toast } from "sonner";
 import { apiFetch } from "@/components/admin/api-client";
@@ -85,6 +87,10 @@ export default function AdminRequestsPage() {
   const [loading, setLoading] = useState(true);
   const [q, setQ] = useState("");
   const [statusFilter, setStatusFilter] = useState("ALL");
+  const [page, setPage] = useState(1);
+  const [total, setTotal] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
+  const PAGE_SIZE = 20;
 
   const [selected, setSelected] = useState<AdminRequest | null>(null);
   const [notes, setNotes] = useState("");
@@ -99,17 +105,21 @@ export default function AdminRequestsPage() {
       const params = new URLSearchParams();
       if (q.trim()) params.set("q", q.trim());
       if (statusFilter !== "ALL") params.set("status", statusFilter);
+      params.set("page", String(page));
+      params.set("pageSize", String(PAGE_SIZE));
       const qs = params.toString();
-      const data = await apiFetch<{ requests: AdminRequest[] }>(
+      const data = await apiFetch<{ requests: AdminRequest[]; total: number; totalPages: number }>(
         `/api/admin/requests${qs ? `?${qs}` : ""}`
       );
       setRequests(data.requests);
+      setTotal(data.total);
+      setTotalPages(data.totalPages);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Talepler yüklenemedi");
     } finally {
       setLoading(false);
     }
-  }, [q, statusFilter]);
+  }, [q, statusFilter, page]);
 
   useEffect(() => {
     const t = setTimeout(() => {
@@ -117,6 +127,11 @@ export default function AdminRequestsPage() {
     }, 300);
     return () => clearTimeout(t);
   }, [fetchRequests]);
+
+  /** Arama/filtre değişince ilk sayfaya dön. */
+  function resetToFirstPage() {
+    setPage(1);
+  }
 
   async function updateStatus(id: string, status: string) {
     setRowUpdating(id);
@@ -191,13 +206,22 @@ export default function AdminRequestsPage() {
           />
           <Input
             value={q}
-            onChange={(e) => setQ(e.target.value)}
+            onChange={(e) => {
+              setQ(e.target.value);
+              resetToFirstPage();
+            }}
             placeholder="İsim, telefon, takip kodu veya ilçe ara..."
             className="pl-9"
             aria-label="Talep ara"
           />
         </div>
-        <Select value={statusFilter} onValueChange={setStatusFilter}>
+        <Select
+          value={statusFilter}
+          onValueChange={(value) => {
+            setStatusFilter(value);
+            resetToFirstPage();
+          }}
+        >
           <SelectTrigger className="w-full sm:w-48" aria-label="Durum filtresi">
             <SelectValue placeholder="Tüm durumlar" />
           </SelectTrigger>
@@ -433,6 +457,37 @@ export default function AdminRequestsPage() {
           <Loader2 className="size-4 animate-spin" aria-hidden="true" />
           Güncelleniyor...
         </p>
+      ) : null}
+
+      {!loading && total > 0 ? (
+        <div className="flex flex-col items-center justify-between gap-3 sm:flex-row">
+          <p className="text-sm text-muted-foreground" aria-live="polite">
+            Toplam <span className="font-medium text-foreground">{total}</span> talep
+            {totalPages > 1 ? ` · Sayfa ${page}/${totalPages}` : ""}
+          </p>
+          {totalPages > 1 ? (
+            <nav aria-label="Sayfalama" className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                disabled={page <= 1 || loading}
+              >
+                <ChevronLeft aria-hidden="true" />
+                Önceki
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                disabled={page >= totalPages || loading}
+              >
+                Sonraki
+                <ChevronRight aria-hidden="true" />
+              </Button>
+            </nav>
+          ) : null}
+        </div>
       ) : null}
     </div>
   );

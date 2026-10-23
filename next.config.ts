@@ -29,9 +29,12 @@ if (process.env.NODE_ENV === "production") {
 const nextConfig: NextConfig = {
   // Not: output: "standalone" yalnızca kendi sunucusunda barındırma içindir;
   // Vercel kendi build pipeline'ını kullandığı için kaldırıldı.
+  // Tip denetimi aktif: src tsc --noEmit temiz; tip hataları build'i durdursun.
   typescript: {
-    ignoreBuildErrors: true,
+    ignoreBuildErrors: false,
   },
+  // X-Powered-By başlığını kaldır: teknoloji parmak izi sızdırma.
+  poweredByHeader: false,
   reactStrictMode: false,
   images: {
     // Yerel görseller güncellendiğinde optimizer'ın 4 saat boyunca bayat

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
+import { clearCacheByPrefix } from "@/lib/cache";
 import { testimonialUpsertSchema } from "@/lib/validation";
 import { jsonError, requireAdmin, unexpectedError, zodErrorResponse } from "../_guard";
 
@@ -36,6 +37,7 @@ export async function POST(request: Request) {
     const data = testimonialUpsertSchema.parse(body);
 
     const testimonial = await db.testimonial.create({ data });
+    clearCacheByPrefix("testi");
     return NextResponse.json({ testimonial }, { status: 201 });
   } catch (error) {
     return zodErrorResponse(error);

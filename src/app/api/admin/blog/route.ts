@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
+import { clearCacheByPrefix } from "@/lib/cache";
 import { blogUpsertSchema } from "@/lib/validation";
 import { isUniqueConstraintError, jsonError, requireAdmin, unexpectedError, zodErrorResponse } from "../_guard";
 
@@ -41,6 +42,7 @@ export async function POST(request: Request) {
         publishedAt: data.published ? new Date() : null,
       },
     });
+    clearCacheByPrefix("post");
     return NextResponse.json({ post }, { status: 201 });
   } catch (error) {
     if (isUniqueConstraintError(error)) {

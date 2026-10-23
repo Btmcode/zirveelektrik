@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
+import { clearCacheByPrefix } from "@/lib/cache";
 import { faqUpsertSchema } from "@/lib/validation";
 import { jsonError, requireAdmin, unexpectedError, zodErrorResponse } from "../../_guard";
 
@@ -31,6 +32,7 @@ export async function PATCH(request: Request, ctx: Ctx) {
     }
 
     const faq = await db.faq.update({ where: { id }, data });
+    clearCacheByPrefix("faq");
     return NextResponse.json({ faq });
   } catch (error) {
     return zodErrorResponse(error);
@@ -50,6 +52,7 @@ export async function DELETE(request: Request, ctx: Ctx) {
     }
 
     await db.faq.delete({ where: { id } });
+    clearCacheByPrefix("faq");
     return NextResponse.json({ ok: true });
   } catch (error) {
     return unexpectedError(error);

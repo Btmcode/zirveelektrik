@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
+import { clearCacheByPrefix } from "@/lib/cache";
 import { blogUpsertSchema } from "@/lib/validation";
 import { isUniqueConstraintError, jsonError, requireAdmin, unexpectedError, zodErrorResponse } from "../../_guard";
 
@@ -41,6 +42,7 @@ export async function PATCH(request: Request, ctx: Ctx) {
         publishedAt: data.published && !existing.publishedAt ? new Date() : existing.publishedAt,
       },
     });
+    clearCacheByPrefix("post");
     return NextResponse.json({ post });
   } catch (error) {
     if (isUniqueConstraintError(error)) {
@@ -63,6 +65,7 @@ export async function DELETE(request: Request, ctx: Ctx) {
     }
 
     await db.blogPost.delete({ where: { id } });
+    clearCacheByPrefix("post");
     return NextResponse.json({ ok: true });
   } catch (error) {
     return unexpectedError(error);
