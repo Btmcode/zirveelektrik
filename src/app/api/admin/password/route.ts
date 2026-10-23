@@ -38,7 +38,9 @@ export async function PATCH(request: Request) {
       return jsonError("Mevcut şifre hatalı", 400);
     }
 
-    const passwordHash = await bcrypt.hash(newPassword, 10);
+    // Cost 12: seed ile tutarlı (seed.ts de 12 kullanır); ~250ms hash süresi
+    // çevrimiçi brute-force'a karşı makul denge.
+    const passwordHash = await bcrypt.hash(newPassword, 12);
     await db.adminUser.update({
       where: { id: user.id },
       data: { passwordHash },

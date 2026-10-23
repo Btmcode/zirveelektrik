@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { randomInt } from "node:crypto";
 import { db } from "@/lib/db";
 import { isAllowedOrigin } from "@/lib/auth";
 import { rateLimit, getClientIp } from "@/lib/rate-limit";
@@ -6,9 +7,9 @@ import { serviceRequestSchema } from "@/lib/validation";
 
 export const dynamic = "force-dynamic";
 
-/** ZR-XXXXXX biçiminde kısa takip kodu üretir. */
+/** ZR-XXXXXX biçiminde kısa takip kodu üretir (kriptografik rastgelelik). */
 function generateCode(): string {
-  return `ZR-${100000 + Math.floor(Math.random() * 900000)}`;
+  return `ZR-${randomInt(100000, 1000000)}`;
 }
 
 async function generateUniqueCode(): Promise<string> {
@@ -26,6 +27,15 @@ async function generateUniqueCode(): Promise<string> {
 
 export async function POST(request: Request) {
   try {
+    // 0) Gövde boyutu sınırı: anormal büyük istekleri erken reddet.
+    const contentLength = Number(request.headers.get("content-length") ?? 0);
+    if (Number.isFinite(contentLength) && contentLength > 32 * 1024) {
+      return NextResponse.json(
+        { ok: false, error: "İstek gövdesi çok büyük." },
+        { status: 413 }
+      );
+    }
+
     // 1) CSRF/Origin kontrolü
     if (!isAllowedOrigin(request)) {
       return NextResponse.json(
@@ -34,8 +44,8 @@ export async function POST(request: Request) {
       );
     }
 
-    // 2) Rate limit: IP başına saatte 5 talep
-    const limit = rateLimit(`req:${getClientIp(request)}`, 5, 60 * 60 * 1000);
+    // 2) Rate limit: IP başına saatte 5 talep (Upstash varsa dağıtık, yoksa in-memory)
+    const limit = await rateLimit(`req:${getClientIp(request)}`, 5, 60 * 60 * 1000);
     if (!limit.allowed) {
       return NextResponse.json(
         {
@@ -72,7 +82,15 @@ export async function POST(request: Request) {
       );
     }
 
-    // 5) Kayıt - benzersiz takip kodu ile
+    // 5) Honeypot / hız kontrolü: bot istekleri sessizce "başarılı" sayılır
+    //    (kayıt OLUŞTURULMAZ). Böylece bot başarılı sandığı için denemeye
+    //    devam etmez; gerçek kullanıcı etkilenmez.
+    const elapsed = parsed.data.formTs ? Date.now() - parsed.data.formTs : -1;
+    if (parsed.data.website || (elapsed >= 0 && elapsed < 3000)) {
+      return NextResponse.json({ ok: true }, { status: 201 });
+    }
+
+    // 6) Kayıt - benzersiz takip kodu ile
     const code = await generateUniqueCode();
     const created = await db.serviceRequest.create({
       data: {

@@ -24,11 +24,13 @@ export async function GET(request: Request) {
     }
 
     if (q) {
+      // mode: "insensitive" — Türkçe ad/ilçe aramasında büyük-küçük uyumsuzluğu
+      // sonuç kaybına yol açmasın (Postgres varsayılanı case-sensitive).
       where.OR = [
-        { name: { contains: q } },
+        { name: { contains: q, mode: "insensitive" } },
         { phone: { contains: q } },
-        { code: { contains: q } },
-        { district: { contains: q } },
+        { code: { contains: q, mode: "insensitive" } },
+        { district: { contains: q, mode: "insensitive" } },
       ];
     }
 

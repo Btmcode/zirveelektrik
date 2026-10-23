@@ -8,6 +8,17 @@ import { getClientIp, rateLimit } from "@/lib/rate-limit";
 import { jsonError, unexpectedError } from "../_guard";
 
 /**
+ * Zamanlama saldırısı karşı önlemi: geçersiz e-posta için de bcrypt maliyeti
+ * ödenir. Aksi halde "kullanıcı yok" yolu belirgin hızlı döner ve saldırgan
+ * yanıt süresinden geçerli admin e-postasını keşfeder.
+ * Modül yüklenirken bir kez üretilir; değeri hiçbir gerçek hesapla eşleşmez.
+ */
+const DUMMY_PASSWORD_HASH = bcrypt.hashSync(
+  "zirve-dummy-" + Math.random().toString(36).slice(2),
+  12
+);
+
+/**
  * POST /api/admin/login
  * - Origin/CSRF kontrolü (403)
  * - IP başına rate limit: 15 dakikada 5 deneme (429)
@@ -23,7 +34,7 @@ export async function POST(request: Request) {
     }
 
     const ip = getClientIp(request);
-    const rl = rateLimit(`login:${ip}`, 5, 15 * 60 * 1000);
+    const rl = await rateLimit(`login:${ip}`, 5, 15 * 60 * 1000);
     if (!rl.allowed) {
       return NextResponse.json(
         { error: `Çok fazla başarısız deneme. ${rl.retryAfterSec} saniye sonra tekrar deneyin.` },
@@ -42,6 +53,8 @@ export async function POST(request: Request) {
 
     const user = await db.adminUser.findUnique({ where: { email } });
     if (!user) {
+      // Zamanlama dengelemesi: gerçek kullanıcı yolu ile benzer maliyet.
+      await bcrypt.compare(password, DUMMY_PASSWORD_HASH);
       return jsonError("E-posta veya şifre hatalı", 401);
     }
 

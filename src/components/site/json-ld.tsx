@@ -4,14 +4,19 @@ interface JsonLdProps {
 
 /**
  * JSON-LD yapısal veri bileşeni (schema.org).
- * Not: content yalnızca sunucuda üretilen güvenilir veridir;
- * kullanıcı girdisi zod ile sterilize edilmeden buraya geçmez.
+ * Güvenlik: "<" karakterleri "\u003c" olarak kaçışlanır; aksi halde admin
+ * panellerinden girilen serbest metin (başlık, özet vb.) içindeki
+ * "</script>" dizisi script etiketini kırarak XSS'e yol açabilir.
  */
+function safeJsonLdStringify(data: unknown): string {
+  return JSON.stringify(data).replace(/</g, "\\u003c");
+}
+
 export function JsonLd({ data }: JsonLdProps) {
   return (
     <script
       type="application/ld+json"
-      dangerouslySetInnerHTML={{ __html: JSON.stringify(data) }}
+      dangerouslySetInnerHTML={{ __html: safeJsonLdStringify(data) }}
     />
   );
 }

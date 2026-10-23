@@ -53,19 +53,3 @@ prompt
 server.log
 # Skills directory
 /skills/
-# database (SQLite yerel dosya; repo'da yeniden üretilir: prisma db push + seed)
-db/*.db
-db/*.db-journal
-
-# dahili ajan çalışma notları (kimlik bilgisi içerir, repoya girmez)
-worklog.md
-
-# sandbox montaj noktası ve geçici dosyalar
-upload/
-tool-results/
-.tmp*
-
-# sandbox altyapı dosyaları (uygulama kodu değil)
-.zscripts/
-Caddyfile
-mini-services/

@@ -54,6 +54,9 @@ interface ApiErrorBody {
 
 export function RequestForm({ districts, services }: RequestFormProps) {
   const [successCode, setSuccessCode] = useState<string | null>(null);
+  // Form yüklendiği anda damgalanır (yalnızca ilk render'da hesaplanır);
+  // sunucu 3 sn'den hızlı gönderimleri bot sayar.
+  const [mountedAt] = useState(() => Date.now());
 
   const form = useForm<FormInput, unknown, ServiceRequestInput>({
     resolver: zodResolver(serviceRequestSchema),
@@ -64,6 +67,7 @@ export function RequestForm({ districts, services }: RequestFormProps) {
       district: "",
       serviceType: "",
       message: "",
+      website: "",
       kvkkConsent: false,
     },
   });
@@ -73,7 +77,7 @@ export function RequestForm({ districts, services }: RequestFormProps) {
       const res = await fetch("/api/requests", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(values),
+        body: JSON.stringify({ ...values, formTs: mountedAt }),
       });
       const data = (await res.json().catch(() => null)) as ApiErrorBody | null;
 
@@ -161,6 +165,17 @@ export function RequestForm({ districts, services }: RequestFormProps) {
 
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="mt-6 space-y-5" noValidate>
+          {/* Honeypot: insanlar ve ekran okuyucular için görünmez/dışı; botlar doldurur. */}
+          <div aria-hidden="true" className="absolute -left-[9999px] size-px overflow-hidden">
+            <label htmlFor="website-hp">Website</label>
+            <input
+              id="website-hp"
+              type="text"
+              tabIndex={-1}
+              autoComplete="off"
+              {...form.register("website")}
+            />
+          </div>
           <div className="grid gap-5 sm:grid-cols-2">
             <FormField
               control={form.control}

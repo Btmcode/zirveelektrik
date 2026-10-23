@@ -25,6 +25,11 @@ export const serviceRequestSchema = z.object({
   district: z.string().trim().min(2, "İlçe seçiniz").max(60),
   serviceType: z.string().trim().max(100).optional().default(""),
   message: z.string().trim().min(10, "Arızayı kısaca anlatın (en az 10 karakter)").max(2000),
+  // Honeypot: gerçek kullanıcılar bu alanı görmez/doldurmaz; botlar doldurur.
+  // Sunucu tarafında doluysa istek sessizce "başarılı" sayılır (kayıt oluşmaz).
+  website: z.string().trim().max(200).optional().default(""),
+  // Formun yüklendiği zaman damgası (ms). 3 sn'den hızlı gönderim bot sayılır.
+  formTs: z.number().optional(),
   // KVKK m.10: aydınlatma metni bilgilendirmesinin onaylandığına dair aktif rıza.
   // boolean + refine: RHF defaultValues tipi (false) ile uyumludur.
   // zod v4: tip hatası mesajı için "error" parametresi kullanılır.
