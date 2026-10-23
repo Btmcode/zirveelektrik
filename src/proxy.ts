@@ -10,8 +10,12 @@ import { ADMIN_LOGIN_PATH, ADMIN_LOGIN_ROUTE } from "@/lib/admin-path";
  * issuer "zirveelektrik.net", audience "zirve-admin") doğrulama yapılır.
  *
  * Kurallar:
- * - Gizli giriş yolu (ADMIN_LOGIN_PATH): oturum YOKSA giriş sayfasına rewrite,
- *   oturum VARSA /admin'e yönlendir.
+ * - Gizli giriş yolu (ADMIN_LOGIN_PATH — yalnızca SUNUCU env'i, client
+ *   bundle'ında YOKTUR): oturum YOKSA giriş sayfasına rewrite, oturum
+ *   VARSA /admin'e yönlendir.
+ * - ADMIN_LOGIN_PATH env'i tanımlı değilse/geçersizse FAIL-CLOSED: giriş
+ *   sayfası hiçbir adresten render edilmez; tüm /admin/** yolları oturum
+ *   yoksa 404 döner (oturum varsa panel çalışmaya devam eder).
  * - Gerçek giriş rotası (/admin/login) doğrudan erişime KAPALI (404); aksi
  *   halde gizli yol, rewrite zinciri üzerinden dışarıya sıza bilirdi.
  * - Diğer tüm /admin/** yolları: oturum YOKSA 404 (login'e yönlendirme
@@ -56,7 +60,9 @@ export async function proxy(request: NextRequest) {
   const authed = await hasValidSession(request.cookies.get(SESSION_COOKIE)?.value);
 
   // 1) Gizli giriş yolu: panelin tek halka açık kapısı.
-  if (pathname === ADMIN_LOGIN_PATH) {
+  //    ADMIN_LOGIN_PATH null ise (env tanımsız/geçersiz) bu dal hiç eşleşmez
+  //    → fail-closed: giriş sayfası hiçbir adresten servis edilmez.
+  if (ADMIN_LOGIN_PATH && pathname === ADMIN_LOGIN_PATH) {
     if (authed) {
       return NextResponse.redirect(new URL("/admin", request.url));
     }

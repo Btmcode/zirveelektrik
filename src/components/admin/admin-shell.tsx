@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import {
   LayoutDashboard,
   Inbox,
@@ -19,7 +19,6 @@ import {
 import type { LucideIcon } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import { ADMIN_LOGIN_PATH } from "@/lib/admin-path";
 import Image from "next/image";
 import { apiFetch } from "@/components/admin/api-client";
 import { Button } from "@/components/ui/button";
@@ -92,7 +91,6 @@ export function AdminShell({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
-  const router = useRouter();
   const [loggingOut, setLoggingOut] = useState(false);
   const header = resolveHeader(pathname);
 
@@ -104,8 +102,10 @@ export function AdminShell({
     setLoggingOut(true);
     try {
       await apiFetch("/api/admin/logout", { method: "POST" });
-      router.push(ADMIN_LOGIN_PATH);
-      router.refresh();
+      // Gizli giriş yolu istemciye verilmez (client bundle'ında taşınmaz);
+      // tam sayfa geçişiyle ana sayfaya dön, tüm istemci durumu sıfırlansın.
+      // eslint-disable-next-line @next/next/no-location-assign-relative-destination
+      window.location.assign("/");
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Çıkış yapılamadı");
       setLoggingOut(false);

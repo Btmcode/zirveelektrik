@@ -30,9 +30,9 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
-# env files (can opt-in for committing if needed)
+# env files — ÖNEMLİ: .env.example DAHİL hiçbir env dosyası repoya girmez.
+# (Env değerleri yalnızca Vercel Environment Variables / yerel .env.local'de tutulur.)
 .env*
-!.env.example
 
 # vercel
 .vercel
@@ -51,5 +51,7 @@ test
 prompt
 
 server.log
+# Yerel SQLite dosyaları (Prisma Postgres kullanılıyor; db/ repoya girmez)
+/db
 # Skills directory
 /skills/
