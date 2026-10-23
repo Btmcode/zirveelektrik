@@ -1,19 +1,23 @@
 /**
- * Hybrid rate limiter.
+ * PostgreSQL tabanlı dağıtık rate limiter (harici servis gerektirmez).
  *
- * - UPSTASH_REDIS_REST_URL + UPSTASH_REDIS_REST_TOKEN tanımlıysa:
- *   Upstash Redis üzerinden FIXED WINDOW limit uygulanır (Vercel'de serverless
- *   instance'lar arası ortak sayaç — dağıtık koruma).
- * - Değişkenler yoksa (yerel geliştirme / sandbox): mevcut in-memory sayaç
- *   kullanılır; harici bağımlılık olmadan çalışmaya devam eder.
- * - Upstash erişiminde beklenmedik hata olursa in-memory sayaca düşülür;
- *   rate limiter arızası formun/admin girişinin çalışmasını engellemez.
+ * Neden PostgreSQL? Yalnızca iletişim formu ve admin girişi gibi DÜŞÜK
+ * TRAFİKLİ uçlar için koruma; Vercel serverless instance'ları arasında
+ * ortak sayaç sağlar (in-memory'nin aksine). Ek servis/anahtar gerektirmez.
+ *
+ * Nasıl çalışır?
+ * - Tek atomik SQL: INSERT ... ON CONFLICT — pencere süresi dolmuşsa sayacı
+ *   1'e indirip pencereyi yeniler; dolmadıysa sayacı artırır ve güncel
+ *   (count, resetAt) ikilisini tek round-trip'te döndürür.
+ * - DB hatasında yerel in-memory sayaca güvenli düşüş yapılır; rate limit
+ *   altyapısı formun/girişin çalışmasını asla engellemez.
+ * - Süresi geçmiş satırlar %5 olasılıkla fırsat temizliğiyle silinir
+ *   (tablo küçük kalır; sayaç satırları pencere başına 1 satırdır).
  *
  * Kullanım: await rateLimit(`login:${ip}`, 5, 15 * 60 * 1000)
  */
 
-import { Ratelimit } from "@upstash/ratelimit";
-import { Redis } from "@upstash/redis";
+import { db } from "@/lib/db";
 
 export interface RateLimitResult {
   allowed: boolean;
@@ -21,38 +25,73 @@ export interface RateLimitResult {
   retryAfterSec: number;
 }
 
-/* ------------------------------------------------------------------ */
-/* Upstash (dağıtık) katman                                            */
-/* ------------------------------------------------------------------ */
+export async function rateLimit(
+  key: string,
+  maxRequests: number,
+  windowMs: number
+): Promise<RateLimitResult> {
+  const windowMsSafe = Math.max(1000, windowMs);
+  try {
+    const rows = await db.$queryRaw<
+      { count: number; resetAt: Date }[]
+    >`
+      INSERT INTO "RateLimitBucket" ("key", "count", "resetAt")
+      VALUES (${key}, 1, NOW() + ${windowMsSafe} * INTERVAL '1 millisecond')
+      ON CONFLICT ("key") DO UPDATE SET
+        "count" = CASE
+          WHEN "RateLimitBucket"."resetAt" < NOW() THEN 1
+          ELSE "RateLimitBucket"."count" + 1
+        END,
+        "resetAt" = CASE
+          WHEN "RateLimitBucket"."resetAt" < NOW()
+          THEN NOW() + ${windowMsSafe} * INTERVAL '1 millisecond'
+          ELSE "RateLimitBucket"."resetAt"
+        END
+      RETURNING "count", "resetAt"
+    `;
 
-const upstashUrl = process.env.UPSTASH_REDIS_REST_URL;
-const upstashToken = process.env.UPSTASH_REDIS_REST_TOKEN;
+    const bucket = rows[0];
+    if (!bucket) {
+      // Teorik olarak ulaşılmaz; güvenli tarafta kal.
+      return { allowed: true, remaining: maxRequests - 1, retryAfterSec: 0 };
+    }
 
-const redis =
-  upstashUrl && upstashToken
-    ? new Redis({ url: upstashUrl, token: upstashToken })
-    : null;
+    if (bucket.count > maxRequests) {
+      return {
+        allowed: false,
+        remaining: 0,
+        retryAfterSec: Math.max(
+          1,
+          Math.ceil((bucket.resetAt.getTime() - Date.now()) / 1000)
+        ),
+      };
+    }
 
-/** Aynı pencere için Ratelimit nesnelerini yeniden kullan (bağlantı/SDK cache). */
-const limiterCache = new Map<string, Ratelimit>();
-
-function getUpstashLimiter(maxRequests: number, seconds: number): Ratelimit | null {
-  if (!redis) return null;
-  const signature = `${maxRequests}:${seconds}`;
-  let limiter = limiterCache.get(signature);
-  if (!limiter) {
-    limiter = new Ratelimit({
-      redis,
-      limiter: Ratelimit.fixedWindow(maxRequests, `${seconds} s`),
-      prefix: "zirve-rl",
-    });
-    limiterCache.set(signature, limiter);
+    maybeCleanupExpired();
+    return {
+      allowed: true,
+      remaining: Math.max(0, maxRequests - bucket.count),
+      retryAfterSec: 0,
+    };
+  } catch (error) {
+    // DB erişilemiyor: servisi bloklamadan yerel sayaca düş.
+    console.error("[rate-limit] DB hatası, in-memory fallback:", error);
+    return memoryRateLimit(key, maxRequests, windowMsSafe);
   }
-  return limiter;
+}
+
+/** Süresi geçmiş sayaç satırlarını düşük olasılıkla temizler (hafıza/DB hijyeni). */
+function maybeCleanupExpired(): void {
+  if (Math.random() >= 0.05) return;
+  db.rateLimitBucket
+    .deleteMany({ where: { resetAt: { lt: new Date() } } })
+    .catch((error) =>
+      console.error("[rate-limit] temizlik hatası:", error)
+    );
 }
 
 /* ------------------------------------------------------------------ */
-/* In-memory fallback katmanı                                          */
+/* In-memory fallback katmanı (yalnızca DB hatasında)                  */
 /* ------------------------------------------------------------------ */
 
 interface Bucket {
@@ -62,7 +101,6 @@ interface Bucket {
 
 const store = new Map<string, Bucket>();
 
-// Eski kayıtları periyodik temizle (bellek sızıntısı önleme)
 const CLEANUP_INTERVAL = 5 * 60 * 1000;
 let lastCleanup = Date.now();
 
@@ -102,42 +140,6 @@ function memoryRateLimit(
     remaining: maxRequests - bucket.count,
     retryAfterSec: 0,
   };
-}
-
-/* ------------------------------------------------------------------ */
-/* Genel API (async — Upstash çağrıları asenkron olduğundan)           */
-/* ------------------------------------------------------------------ */
-
-export async function rateLimit(
-  key: string,
-  maxRequests: number,
-  windowMs: number
-): Promise<RateLimitResult> {
-  const seconds = Math.max(1, Math.round(windowMs / 1000));
-  const limiter = getUpstashLimiter(maxRequests, seconds);
-
-  if (limiter) {
-    try {
-      const result = await limiter.limit(key);
-      return {
-        allowed: result.success,
-        remaining: result.remaining ?? Math.max(0, maxRequests - 1),
-        retryAfterSec: result.success
-          ? 0
-          : Math.max(
-              1,
-              Math.ceil(
-                ((result.reset ?? Date.now() + windowMs) - Date.now()) / 1000
-              )
-            ),
-      };
-    } catch (error) {
-      // Upstash erişilemiyor: servisi bloklamadan in-memory sayaca düş.
-      console.error("[rate-limit] Upstash hatası, in-memory fallback:", error);
-    }
-  }
-
-  return memoryRateLimit(key, maxRequests, windowMs);
 }
 
 /**

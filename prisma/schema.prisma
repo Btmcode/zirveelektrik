@@ -123,3 +123,15 @@ model Setting {
   value     String
   updatedAt DateTime @updatedAt
 }
+
+// ---------- Rate limit ----------
+
+/// Dağıtık rate-limit sayaçları: Upstash gibi harici servis YERİNE doğrudan
+/// PostgreSQL'de tutulur (tek satır = bir "kapsam:IP" penceresi).
+/// Yalnızca form ve login gibi düşük trafikli uçlar kullanır; satırlar
+/// pencere süresi geçtikten sonra fırsat temizliğiyle silinir.
+model RateLimitBucket {
+  key     String   @id // ör. "req:1.2.3.4", "login:1.2.3.4"
+  count   Int      @default(0)
+  resetAt DateTime // pencere sıfırlanma zamanı
+}

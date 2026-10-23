@@ -44,7 +44,7 @@ export async function POST(request: Request) {
       );
     }
 
-    // 2) Rate limit: IP başına saatte 5 talep (Upstash varsa dağıtık, yoksa in-memory)
+    // 2) Rate limit: IP başına saatte 5 talep (PostgreSQL tabanlı dağıtık sayaç)
     const limit = await rateLimit(`req:${getClientIp(request)}`, 5, 60 * 60 * 1000);
     if (!limit.allowed) {
       return NextResponse.json(
