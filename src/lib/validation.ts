@@ -54,6 +54,7 @@ export const requestUpdateSchema = z.object({
     .enum(["NEW", "CONTACTED", "SCHEDULED", "COMPLETED", "CANCELLED"])
     .optional(),
   notes: z.string().trim().max(2000).optional(),
+  markNotified: z.boolean().optional(),
 });
 
 // ---------- Admin içerik şemaları ----------

@@ -5,6 +5,8 @@ import { jsonError, requireAdmin, unexpectedError, zodErrorResponse } from "../.
 
 /**
  * PATCH /api/admin/requests/[id] - durum ve not güncelleme.
+ * markNotified: true → WhatsApp bildirim zamanı (notifiedAt) şimdi olarak işaretlenir
+ * (yönetici "WhatsApp'a Düşür" kartını kendi telefonundan gönderdiğinde çağrılır).
  * DELETE /api/admin/requests/[id] - talebi kalıcı siler.
  */
 type Ctx = { params: Promise<{ id: string }> };
@@ -23,7 +25,12 @@ export async function PATCH(request: Request, ctx: Ctx) {
       return jsonError("Geçersiz istek gövdesi", 400);
     }
 
-    const data = requestUpdateSchema.parse(body);
+    const { status, notes, markNotified } = requestUpdateSchema.parse(body);
+
+    const patch: { status?: string; notes?: string; notifiedAt?: Date } = {};
+    if (status !== undefined) patch.status = status;
+    if (notes !== undefined) patch.notes = notes;
+    if (markNotified) patch.notifiedAt = new Date();
 
     const existing = await db.serviceRequest.findUnique({ where: { id }, select: { id: true } });
     if (!existing) {
@@ -32,7 +39,7 @@ export async function PATCH(request: Request, ctx: Ctx) {
 
     const updated = await db.serviceRequest.update({
       where: { id },
-      data,
+      data: patch,
       select: {
         id: true,
         code: true,
@@ -45,6 +52,7 @@ export async function PATCH(request: Request, ctx: Ctx) {
         status: true,
         notes: true,
         source: true,
+        notifiedAt: true,
         createdAt: true,
         updatedAt: true,
       },

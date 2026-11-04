@@ -65,6 +65,7 @@ export async function GET(request: Request) {
           status: true,
           notes: true,
           source: true,
+          notifiedAt: true,
           createdAt: true,
           updatedAt: true,
         },

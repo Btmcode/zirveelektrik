@@ -13,6 +13,12 @@ import {
   Save,
   ChevronLeft,
   ChevronRight,
+  MessageCircle,
+  MapPin,
+  Send,
+  Zap,
+  CheckCircle2,
+  Clock3,
 } from "lucide-react";
 import { toast } from "sonner";
 import { apiFetch } from "@/components/admin/api-client";
@@ -21,7 +27,7 @@ import { EmptyState } from "@/components/admin/empty-state";
 import { PageHeader } from "@/components/admin/page-header";
 import { Field } from "@/components/admin/form-field";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
@@ -58,6 +64,15 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { REQUEST_STATUS, REQUEST_STATUS_ORDER } from "@/lib/site";
 import { formatDateTimeTr } from "@/lib/utils-format";
+import {
+  formatRequestCard,
+  buildMapsLink,
+  buildCustomerWaLink,
+  buildOwnerWaLink,
+  formatTrPhoneDisplay,
+  formatTimeTr,
+} from "@/lib/whatsapp-card";
+import { Badge } from "@/components/ui/badge";
 
 interface AdminRequest {
   id: string;
@@ -71,6 +86,7 @@ interface AdminRequest {
   status: string;
   notes: string | null;
   source: string;
+  notifiedAt: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -98,6 +114,10 @@ export default function AdminRequestsPage() {
   const [deleting, setDeleting] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [rowUpdating, setRowUpdating] = useState<string | null>(null);
+  const [dropping, setDropping] = useState<string | null>(null);
+
+  /** Bekleyen en yeni acil çağrı (liste createdAt desc sıralı). */
+  const latestNew = requests?.find((r) => r.status === "NEW") ?? null;
 
   const fetchRequests = useCallback(async () => {
     setLoading(true);
@@ -156,6 +176,33 @@ export default function AdminRequestsPage() {
     setNotes(request.notes ?? "");
   }
 
+  /**
+   * Talebi sahip WhatsApp'ına (+90 537 720 13 45) acil çağrı kartı olarak düşürür:
+   * wa.me sekmesi hazırlanmış metinle açılır, gönderen telefonda tek dokunuşla tamamlanır.
+   * Bildirim zamanı sunucuda notifiedAt olarak işaretlenir.
+   */
+  function dropToWhatsApp(r: AdminRequest) {
+    const url = buildOwnerWaLink(formatRequestCard(r));
+    setDropping(r.id);
+    apiFetch<{ request: AdminRequest }>(`/api/admin/requests/${r.id}`, {
+      method: "PATCH",
+      body: JSON.stringify({ markNotified: true }),
+    })
+      .then((data) => {
+        setRequests(
+          (prev) => prev?.map((x) => (x.id === data.request.id ? data.request : x)) ?? null
+        );
+        if (selected?.id === data.request.id) setSelected(data.request);
+        toast.success(`${r.code} WhatsApp kartı açıldı — göndermek için dokun`);
+      })
+      .catch(() => {
+        // İşaret başarısız olsa bile kart yine de açılır; panelde gösterilebilir.
+        toast.info("Kart açıldı; bildirim zamanı işaretlenemedi");
+      })
+      .finally(() => setDropping(null));
+    window.open(url, "_blank", "noopener,noreferrer");
+  }
+
   async function saveNotes() {
     if (!selected) return;
     setSaving(true);
@@ -197,6 +244,133 @@ export default function AdminRequestsPage() {
         title="Talepler"
         description="Web sitesinden gelen servis taleplerini yönetin"
       />
+
+      {/* Acil Çağrı Mesaj Kartı — bekleyen en yeni talep, WhatsApp düşürme aksiyonları */}
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+          <CardTitle className="flex items-center gap-2 text-base">
+            <AlertTriangle className="size-4 text-destructive" aria-hidden="true" />
+            Acil Çağrı Mesaj Kartı
+          </CardTitle>
+          {latestNew ? (
+            latestNew.notifiedAt ? (
+              <Badge variant="success" className="gap-1">
+                <CheckCircle2 className="size-3" aria-hidden="true" />
+                WhatsApp'a düştü
+              </Badge>
+            ) : (
+              <Badge variant="warning" className="gap-1">
+                <Clock3 className="size-3" aria-hidden="true" />
+                İletim bekliyor
+              </Badge>
+            )
+          ) : (
+            <Badge variant="secondary">Bekleyen çağrı yok</Badge>
+          )}
+        </CardHeader>
+        <CardContent>
+          {latestNew ? (
+            <div className="space-y-1.5 rounded-xl border border-zinc-800 bg-zinc-900 p-4 text-sm text-zinc-100 sm:p-5">
+              <p className="pb-1 text-base font-bold tracking-tight text-amber-400">
+                🚨 7/24 YENİ ACİL SERVİS ÇAĞRISI ⚡
+              </p>
+              <p>
+                👤 <span className="font-semibold">Müşteri:</span> {latestNew.name}
+              </p>
+              <p>
+                📞 <span className="font-semibold">Telefon:</span>{" "}
+                <a href={`tel:${latestNew.phone}`} className="underline-offset-2 hover:underline">
+                  {formatTrPhoneDisplay(latestNew.phone)}
+                </a>
+              </p>
+              <p>
+                📍 <span className="font-semibold">Bölge:</span> {latestNew.district}
+              </p>
+              <p>
+                🏠 <span className="font-semibold">Açık Adres:</span> {latestNew.address}
+              </p>
+              <p>
+                🛠 <span className="font-semibold">Arıza Türü:</span>{" "}
+                {latestNew.serviceType || "Belirtilmemiş"}
+              </p>
+              <p>
+                📝 <span className="font-semibold">Not:</span> {latestNew.message}
+              </p>
+              <p>
+                🕐 <span className="font-semibold">Saat:</span> {formatTimeTr(latestNew.createdAt)}
+                {" "}
+                (7/24 Nöbetçi Ekip)
+              </p>
+              <p className="text-zinc-400">
+                🎫 <span className="font-semibold">Takip Kodu:</span> {latestNew.code}
+              </p>
+              <div className="grid grid-cols-1 gap-2 pt-2 sm:grid-cols-2">
+                <a
+                  href={`tel:${latestNew.phone}`}
+                  className="flex min-h-11 items-center justify-center gap-2 rounded-md bg-zinc-800 px-3 py-2 text-sm font-medium text-zinc-100 transition-colors hover:bg-zinc-700"
+                >
+                  <Phone className="size-4" aria-hidden="true" />
+                  Müşteriyi Hemen Ara
+                </a>
+                <a
+                  href={buildMapsLink(latestNew.address, latestNew.district)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex min-h-11 items-center justify-center gap-2 rounded-md bg-zinc-800 px-3 py-2 text-sm font-medium text-zinc-100 transition-colors hover:bg-zinc-700"
+                >
+                  <MapPin className="size-4" aria-hidden="true" />
+                  Konumu Haritada Aç
+                </a>
+                {buildCustomerWaLink(latestNew) ? (
+                  <a
+                    href={buildCustomerWaLink(latestNew) ?? "#"}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex min-h-11 items-center justify-center gap-2 rounded-md bg-emerald-700 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-emerald-600 sm:col-span-2"
+                  >
+                    <MessageCircle className="size-4" aria-hidden="true" />
+                    WhatsApp'tan Yaz
+                  </a>
+                ) : null}
+                <div className="sm:col-span-2">
+                  <Button
+                    variant="whatsapp"
+                    className="w-full"
+                    onClick={() => dropToWhatsApp(latestNew)}
+                    disabled={dropping === latestNew.id}
+                  >
+                    {dropping === latestNew.id ? (
+                      <Loader2 className="animate-spin" aria-hidden="true" />
+                    ) : (
+                      <Send aria-hidden="true" />
+                    )}
+                    WhatsApp'a Düşür (+90 537 720 13 45)
+                  </Button>
+                </div>
+                <div className="sm:col-span-2">
+                  <Button
+                    variant="takeover"
+                    className="w-full"
+                    onClick={() => updateStatus(latestNew.id, "CONTACTED")}
+                    disabled={rowUpdating === latestNew.id}
+                  >
+                    {rowUpdating === latestNew.id ? (
+                      <Loader2 className="animate-spin" aria-hidden="true" />
+                    ) : (
+                      <Zap aria-hidden="true" />
+                    )}
+                    Çağrıyı Üzerime Alıyorum
+                  </Button>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <p className="text-sm text-muted-foreground">
+              Bekleyen acil çağrı yok. Yeni talepler geldiğinde bu kartta görünür.
+            </p>
+          )}
+        </CardContent>
+      </Card>
 
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
         <div className="relative flex-1">
@@ -376,6 +550,49 @@ export default function AdminRequestsPage() {
                 <div className="sm:col-span-2">
                   <p className="text-xs text-muted-foreground">Arıza Mesajı</p>
                   <p className="rounded-md bg-muted p-3 text-sm">{selected.message}</p>
+                </div>
+                <div className="flex flex-wrap gap-2 sm:col-span-2">
+                  <Button variant="outline" size="sm" asChild>
+                    <a href={`tel:${selected.phone}`} aria-label={`Ara: ${selected.phone}`}>
+                      <Phone aria-hidden="true" />
+                      Hemen Ara
+                    </a>
+                  </Button>
+                  <Button variant="outline" size="sm" asChild>
+                    <a
+                      href={buildMapsLink(selected.address, selected.district)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      <MapPin aria-hidden="true" />
+                      Haritada Aç
+                    </a>
+                  </Button>
+                  {buildCustomerWaLink(selected) ? (
+                    <Button variant="outline" size="sm" asChild>
+                      <a
+                        href={buildCustomerWaLink(selected) ?? "#"}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        <MessageCircle aria-hidden="true" />
+                        Müşteriye Yaz
+                      </a>
+                    </Button>
+                  ) : null}
+                  <Button
+                    variant="whatsapp"
+                    size="sm"
+                    onClick={() => dropToWhatsApp(selected)}
+                    disabled={dropping === selected.id}
+                  >
+                    {dropping === selected.id ? (
+                      <Loader2 className="animate-spin" aria-hidden="true" />
+                    ) : (
+                      <Send aria-hidden="true" />
+                    )}
+                    WhatsApp'a Düşür
+                  </Button>
                 </div>
                 <div>
                   <p className="text-xs text-muted-foreground">Kaynak</p>

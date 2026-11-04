@@ -20,6 +20,12 @@ const buttonVariants = cva(
         ghost:
           "hover:bg-accent hover:text-accent-foreground dark:hover:bg-accent/50",
         link: "text-primary underline-offset-4 hover:underline",
+        // WhatsApp iletimi (yeşil) — Acil Çağrı kartı için özel treatment
+        whatsapp:
+          "bg-emerald-600 text-white shadow-xs hover:bg-emerald-700 focus-visible:ring-emerald-600/40",
+        // "Çağrıyı Üzerime Alıyorum" (amber) — Acil Çağrı kartı için özel treatment
+        takeover:
+          "bg-amber-400 text-zinc-900 shadow-xs hover:bg-amber-500 focus-visible:ring-amber-400/40",
       },
       size: {
         default: "h-9 px-4 py-2 has-[>svg]:px-3",

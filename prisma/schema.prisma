@@ -112,6 +112,7 @@ model ServiceRequest {
   status      String    @default("NEW") // NEW | CONTACTED | SCHEDULED | COMPLETED | CANCELLED
   notes       String?
   source      String    @default("WEBSITE") // WEBSITE | WHATSAPP | PHONE
+  notifiedAt  DateTime? // WhatsApp bildirimi (otomatik veya manuel) gönderilme anı
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 }
