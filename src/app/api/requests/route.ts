@@ -93,12 +93,20 @@ export async function POST(request: Request) {
 
     // 6) Kayıt - benzersiz takip kodu ile
     const code = await generateUniqueCode();
+    // Savunma katmanı: istemci mahalleyi adrese eklemeyi atladıysa sunucu
+    // tamamlar ("X Mahallesi, ..."). Zaten başındaysa (formun birleşik
+    // gönderimi) dokunulmaz; WhatsApp kartı ve harita linki tam adres alır.
+    const mahalle = parsed.data.mahalle?.trim();
+    const address =
+      mahalle && !parsed.data.address.toLowerCase().startsWith(mahalle.toLowerCase())
+        ? `${mahalle} Mahallesi, ${parsed.data.address}`
+        : parsed.data.address;
     const created = await db.serviceRequest.create({
       data: {
         code,
         name: parsed.data.name,
         phone: parsed.data.phone,
-        address: parsed.data.address,
+        address,
         district: parsed.data.district,
         serviceType: parsed.data.serviceType || null,
         message: parsed.data.message,

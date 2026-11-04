@@ -179,3 +179,20 @@
 ::-webkit-scrollbar-thumb:hover {
   background: oklch(0.78 0 0);
 }
+
+/* ---------- Mobil form ergonomisi ----------
+   - 16px giriş yazı tipi: iOS, 16px altındaki alanlarda odaklanınca otomatik
+     yakınlaştırma yapar; bu kural zoom'u engeller.
+   - 44px dokunma hedefi: erişilebilirlik (WCAG 2.5.5) ve başparmak ergonomisi.
+   Katmansız (unlayered) olduğu için Tailwind utility sınıflarını geçersiz kılar. */
+@media (max-width: 639px) {
+  input,
+  select,
+  textarea {
+    font-size: 16px;
+  }
+  input,
+  select {
+    min-height: 44px;
+  }
+}

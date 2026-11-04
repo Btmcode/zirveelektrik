@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -10,6 +10,7 @@ import {
   ChevronDown,
   ExternalLink,
   Loader2,
+  MapPin,
   Send,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -32,17 +33,43 @@ import {
 } from "@/lib/validation";
 
 /**
- * İlçe/hizmet seçimi native <select> ile yapılır: Radix Select kimliklerini
- * React useId ile üretir ve HMR sonrası hydration uyumsuzluğu doğurabilir;
- * native select hem deterministiktir hem de mobilde yerel seçici deneyimi verir.
+ * İlçe/mahalle/sokak seçimi native <select> ile yapılır: Radix Select
+ * kimliklerini React useId ile üretir ve HMR sonrası hydration uyumsuzluğu
+ * doğurabilir; native select hem deterministiktir hem de mobilde yerel
+ * seçici deneyimi (iOS wheel picker) verir.
  */
 const selectClasses =
-  "h-10 w-full appearance-none rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs transition-[color,box-shadow] outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] disabled:cursor-not-allowed disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-destructive/20";
+  "h-11 w-full appearance-none rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs transition-[color,box-shadow] outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] disabled:cursor-not-allowed disabled:bg-muted/50 disabled:opacity-60 aria-invalid:border-destructive aria-invalid:ring-destructive/20";
 
-type FormInput = z.input<typeof serviceRequestSchema>;
+/** Zorunlu alanları işaretleyen yıldız; ekran okuyucular için sessiz. */
+function RequiredMark() {
+  return (
+    <span className="text-destructive" aria-hidden="true">
+      {" "}
+      *
+    </span>
+  );
+}
+
+/** Mahalle adındaki olası "Mahallesi/Mah." eklerini soyup düzenli hâle getirir. */
+function cleanNeighborhoodName(raw: string): string {
+  return raw.replace(/\s*(Mahallesi|Mah\.|Mh\.|Mah)\s*$/i, "").trim();
+}
+
+/** "Diğer (elle yazacağım)" seçeneğinin görsel olmayan değeri. */
+const OTHER_STREET = "__diger__";
+/** Bina/daire dropdown'larındaki "Diğer" değeri. */
+const OTHER_NO = "__diger__";
+
+const BINA_OPTIONS = Array.from({ length: 300 }, (_, i) => String(i + 1));
+const DAIRE_OPTIONS = Array.from({ length: 60 }, (_, i) => String(i + 1));
 
 interface RequestFormProps {
-  districts: { name: string; neighborhoods: string[] }[];
+  districts: {
+    name: string;
+    side: string;
+    neighborhoods: string[];
+  }[];
   services: string[];
 }
 
@@ -54,36 +81,175 @@ interface ApiErrorBody {
 
 export function RequestForm({ districts, services }: RequestFormProps) {
   const [successCode, setSuccessCode] = useState<string | null>(null);
-  // Kademeli adres seçimi: ilçe → o ilçenin mahalleleri (opsiyonel, adresin başına eklenir)
-  const [mahalle, setMahalle] = useState("");
+  // Mahalle seçimine bağlı sokak listesi (public /api/geo/streets).
+  const [streets, setStreets] = useState<string[]>([]);
+  const [streetsLoading, setStreetsLoading] = useState(false);
+  const [sokakChoice, setSokakChoice] = useState("");
+  const [sokakOther, setSokakOther] = useState(false);
+  // Bina/daire no harfli olabilir (12A, Z12): dropdown'da yoksa elle giriş.
+  const [binaOther, setBinaOther] = useState(false);
+  const [daireOther, setDaireOther] = useState(false);
+  // Bayat yanıt koruması: yalnızca en son isteğin sonucu kabul edilir.
+  const streetReqSeq = useRef(0);
   // Form yüklendiği anda damgalanır (yalnızca ilk render'da hesaplanır);
   // sunucu 3 sn'den hızlı gönderimleri bot sayar.
   const [mountedAt] = useState(() => Date.now());
 
-  const form = useForm<FormInput, unknown, ServiceRequestInput>({
-    resolver: zodResolver(serviceRequestSchema),
-    defaultValues: {
-      name: "",
-      phone: "",
-      address: "",
-      district: "",
-      serviceType: "",
-      message: "",
-      website: "",
-      kvkkConsent: false,
-    },
-  });
+  /**
+   * Doğrulama şeması: paylaşılan şema, formun yapılandırılmış adres
+   * alanlarına göre uyarlanır (birleşik `address` gönderimde oluşturulur)
+   * ve zorunluluklar ilçe/mahalle verisine göre dinamik eklenir. Sunucu,
+   * birleşik son adresi kendi kurallarıyla (min 10 karakter) yeniden
+   * doğrular.
+   */
+  const formSchema = useMemo(
+    () =>
+      serviceRequestSchema
+        .extend({
+          address: z.string().trim().max(500).optional().default(""),
+        })
+        .superRefine((val, ctx) => {
+          const hasNeighborhoods =
+            (districts.find((d) => d.name === val.district)?.neighborhoods
+              .length ?? 0) > 0;
+          if (hasNeighborhoods && !val.mahalle?.trim()) {
+            ctx.addIssue({
+              code: "custom",
+              path: ["mahalle"],
+              message: "Mahalle seçiniz",
+            });
+          }
+          if (!val.sokak || val.sokak.trim().length < 2) {
+            ctx.addIssue({
+              code: "custom",
+              path: ["sokak"],
+              message: "Sokak/cadde seçin veya elle yazın",
+            });
+          }
+          if (!val.binaNo?.trim()) {
+            ctx.addIssue({
+              code: "custom",
+              path: ["binaNo"],
+              message: "Bina numarası seçin",
+            });
+          }
+        }),
+    [districts]
+  );
+
+  const form = useForm<z.input<typeof formSchema>, unknown, ServiceRequestInput>(
+    {
+      resolver: zodResolver(formSchema),
+      defaultValues: {
+        name: "",
+        phone: "",
+        mahalle: "",
+        sokak: "",
+        binaNo: "",
+        daireNo: "",
+        address: "",
+        district: "",
+        serviceType: "",
+        message: "",
+        website: "",
+        kvkkConsent: false,
+      },
+    }
+  );
 
   // useForm SONRASI türetilir (TDZ hatasına karşı sıralama önemli).
   const selectedDistrictName = form.watch("district");
-  const selectedNeighborhoods =
-    districts.find((d) => d.name === selectedDistrictName)?.neighborhoods ?? [];
+  const selectedMahalle = form.watch("mahalle");
+  const sokakValue = form.watch("sokak");
+  const binaValue = form.watch("binaNo");
+  const daireValue = form.watch("daireNo");
+
+  const selectedDistrict = districts.find((d) => d.name === selectedDistrictName);
+  const selectedNeighborhoods = selectedDistrict?.neighborhoods ?? [];
+
+  // İlçe seçeneklerini yakalara göre grupla (optgroup).
+  const avrupaDistricts = districts.filter((d) => d.side !== "ANADOLU");
+  const anadoluDistricts = districts.filter((d) => d.side === "ANADOLU");
+
+  /** Mahalle değişince o mahallenin sokak listesini getirir. */
+  function loadStreets(district: string, mahalleName: string): void {
+    const seq = ++streetReqSeq.current;
+    setStreets([]);
+    setSokakChoice("");
+    setSokakOther(false);
+    form.setValue("sokak", "", { shouldValidate: false });
+    if (!district || !mahalleName) {
+      setStreetsLoading(false);
+      return;
+    }
+    setStreetsLoading(true);
+    fetch(
+      `/api/geo/streets?ilce=${encodeURIComponent(district)}&mahalle=${encodeURIComponent(mahalleName)}`
+    )
+      .then((r) => (r.ok ? r.json() : { streets: [] }))
+      .then((data: { streets?: string[] }) => {
+        if (streetReqSeq.current !== seq) return; // bayat yanıt
+        setStreets(Array.isArray(data.streets) ? data.streets : []);
+        setStreetsLoading(false);
+      })
+      .catch(() => {
+        if (streetReqSeq.current !== seq) return;
+        setStreets([]);
+        setStreetsLoading(false);
+      });
+  }
+
+  /** Mahalle seçimi değişti: sokak zincirini sıfırla ve listeyi getir. */
+  function onMahalleChange(value: string): void {
+    loadStreets(selectedDistrictName, value);
+  }
+
+  // Canlı adres özeti: kullanıcıya gönderilecek birleşik adresi gösterir.
+  const mahalleClean = cleanNeighborhoodName(selectedMahalle ?? "");
+  const detailSummary = [
+    sokakValue?.trim() ? sokakValue.trim() : "",
+    binaValue ? `No:${binaValue}` : "",
+    daireValue ? `D:${daireValue}` : "",
+  ]
+    .filter(Boolean)
+    .join(" ");
+  const addressSummary = [
+    mahalleClean ? `${mahalleClean} Mahallesi` : "",
+    selectedDistrictName,
+    detailSummary,
+  ]
+    .filter(Boolean)
+    .join(", ");
+
+  /** Sokak/bina/daire zincirini ve ilgili form durumunu sıfırlar. */
+  function resetAddressChain(): void {
+    streetReqSeq.current++;
+    setStreets([]);
+    setSokakChoice("");
+    setSokakOther(false);
+    setBinaOther(false);
+    setDaireOther(false);
+    setStreetsLoading(false);
+    form.setValue("sokak", "", { shouldValidate: false });
+    form.setValue("binaNo", "", { shouldValidate: false });
+    form.setValue("daireNo", "", { shouldValidate: false });
+  }
 
   async function onSubmit(values: ServiceRequestInput) {
     try {
-      // Mahalle seçildiyse adresin başına eklenir (WhatsApp kartı ve harita linki
-      // dahil tek adres metni olarak akar).
-      const address = [mahalle, values.address].filter(Boolean).join(", ");
+      // Birleşik adres: "X Mahallesi, Sokak No:bina D:daire". WhatsApp
+      // kartı ve harita linki dahil tek adres metni olarak akar.
+      const nh = cleanNeighborhoodName(values.mahalle ?? "");
+      const detail = [
+        values.sokak?.trim(),
+        values.binaNo ? `No:${values.binaNo}` : "",
+        values.daireNo ? `D:${values.daireNo}` : "",
+      ]
+        .filter(Boolean)
+        .join(" ");
+      const address = [nh ? `${nh} Mahallesi` : "", detail]
+        .filter(Boolean)
+        .join(", ");
       const res = await fetch("/api/requests", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -95,7 +261,7 @@ export function RequestForm({ districts, services }: RequestFormProps) {
         const code = (data as { code?: string }).code;
         if (code) setSuccessCode(code);
         form.reset();
-        setMahalle("");
+        resetAddressChain();
         toast.success("Talebiniz alındı", {
           description: code
             ? `Takip kodunuz: ${code}. Ustalarımız en kısa sürede sizi arayacak.`
@@ -108,7 +274,9 @@ export function RequestForm({ districts, services }: RequestFormProps) {
         for (const [field, messages] of Object.entries(data.errors)) {
           const message = messages?.[0];
           if (message) {
-            form.setError(field as keyof FormInput, { message });
+            form.setError(field as keyof z.input<typeof formSchema>, {
+              message,
+            });
           }
         }
         toast.error("Lütfen formu kontrol edin", {
@@ -126,6 +294,28 @@ export function RequestForm({ districts, services }: RequestFormProps) {
         description:
           "İnternet bağlantınızı kontrol edin veya bizi telefonla arayın.",
       });
+    }
+  }
+
+  // Geçersiz gönderimde ilk hatalı alana odaklan (klavye ve ekran okuyucu dostu).
+  function onInvalid() {
+    const firstError = Object.keys(form.formState.errors).find(
+      (k) => k !== "website"
+    );
+    if (firstError) {
+      try {
+        // RHF'in Controller tabanlı alanlar için setFocus options tipi
+        // daraltıldığından imza açıkça verilir; davranış aynı kalır
+        // (native input/select alanlarında shouldFocus çalışır).
+        (
+          form.setFocus as (
+            name: string,
+            options?: { shouldFocus?: boolean }
+          ) => void
+        )(firstError, { shouldFocus: true });
+      } catch {
+        // Özel bileşenlerde odaklanma başarısız olabilir; kritik değil.
+      }
     }
   }
 
@@ -154,7 +344,7 @@ export function RequestForm({ districts, services }: RequestFormProps) {
           onClick={() => {
             setSuccessCode(null);
             form.reset();
-            setMahalle("");
+            resetAddressChain();
           }}
         >
           Yeni Talep Oluştur
@@ -174,9 +364,19 @@ export function RequestForm({ districts, services }: RequestFormProps) {
         Formu doldurun; ekibimiz sizi kısa sürede arayarak adresinize uygun
         randevu planlasın.
       </p>
+      <p className="mt-3 text-xs text-muted-foreground">
+        <span className="text-destructive" aria-hidden="true">
+          *
+        </span>{" "}
+        ile işaretli alanlar zorunludur.
+      </p>
 
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="mt-6 space-y-5" noValidate>
+        <form
+          onSubmit={form.handleSubmit(onSubmit, onInvalid)}
+          className="mt-6 space-y-5"
+          noValidate
+        >
           {/* Honeypot: insanlar ve ekran okuyucular için görünmez/dışı; botlar doldurur. */}
           <div aria-hidden="true" className="absolute -left-[9999px] size-px overflow-hidden">
             <label htmlFor="website-hp">Website</label>
@@ -188,17 +388,22 @@ export function RequestForm({ districts, services }: RequestFormProps) {
               {...form.register("website")}
             />
           </div>
+
           <div className="grid gap-5 sm:grid-cols-2">
             <FormField
               control={form.control}
               name="name"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Ad Soyad</FormLabel>
+                  <FormLabel>
+                    Ad Soyad
+                    <RequiredMark />
+                  </FormLabel>
                   <FormControl>
                     <Input
                       placeholder="Adınız Soyadınız"
                       autoComplete="name"
+                      maxLength={80}
                       {...field}
                     />
                   </FormControl>
@@ -211,13 +416,17 @@ export function RequestForm({ districts, services }: RequestFormProps) {
               name="phone"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Telefon</FormLabel>
+                  <FormLabel>
+                    Telefon
+                    <RequiredMark />
+                  </FormLabel>
                   <FormControl>
                     <Input
                       type="tel"
                       inputMode="tel"
                       placeholder="05XX XXX XX XX"
                       autoComplete="tel"
+                      maxLength={20}
                       {...field}
                     />
                   </FormControl>
@@ -227,110 +436,420 @@ export function RequestForm({ districts, services }: RequestFormProps) {
             />
           </div>
 
-          <div className="grid gap-5 sm:grid-cols-2">
-            <FormField
-              control={form.control}
-              name="district"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>İlçe</FormLabel>
-                  <FormControl>
-                    <div className="relative">
-                      <select
-                        {...field}
-                        onChange={(e) => {
-                          field.onChange(e);
-                          setMahalle(""); // ilçe değişince mahalle seçimini sıfırla
-                        }}
-                        aria-label="İlçe seçin"
-                        className={selectClasses}
-                      >
-                        <option value="" disabled>
-                          İlçe seçin
-                        </option>
-                        {districts.map((d) => (
-                          <option key={d.name} value={d.name}>
-                            {d.name}
-                          </option>
-                        ))}
-                      </select>
-                      <ChevronDown className="pointer-events-none absolute right-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
-                    </div>
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="serviceType"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Hizmet</FormLabel>
-                  <FormControl>
-                    <div className="relative">
-                      <select {...field} aria-label="Hizmet seçin" className={selectClasses}>
-                        <option value="">Hizmet seçin (opsiyonel)</option>
-                        {services.map((service) => (
-                          <option key={service} value={service}>
-                            {service}
-                          </option>
-                        ))}
-                      </select>
-                      <ChevronDown className="pointer-events-none absolute right-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
-                    </div>
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </div>
+          {/* Adres bilgileri: tamamen kademeli seçim
+              (ilçe → mahalle → sokak → bina → daire) */}
+          <fieldset className="space-y-4 rounded-xl border bg-muted/30 p-4">
+            <legend className="flex items-center gap-1.5 px-1 text-sm font-semibold text-foreground">
+              <MapPin className="size-4 text-primary" aria-hidden="true" />
+              Adres Bilgileri
+            </legend>
 
-          {/* Kademeli adres seçimi: ilçenin mahalle verisi varsa dropdown açılır.
-              RHF dışı bağımsız state — gönderimde adresin başına eklenir. */}
-          {selectedNeighborhoods.length > 0 ? (
-            <FormItem>
-              <FormLabel>Mahalle</FormLabel>
-              <FormControl>
-                <div className="relative">
-                  <select
-                    value={mahalle}
-                    onChange={(e) => setMahalle(e.target.value)}
-                    aria-label="Mahalle seçin"
-                    className={selectClasses}
-                  >
-                    <option value="">Mahalle seçin (opsiyonel)</option>
-                    {selectedNeighborhoods.map((n) => (
-                      <option key={n} value={n}>
-                        {n}
-                      </option>
-                    ))}
-                  </select>
-                  <ChevronDown
-                    className="pointer-events-none absolute right-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
-                    aria-hidden="true"
-                  />
-                </div>
-              </FormControl>
-              <p className="text-xs text-muted-foreground">
-                Seçilirse adresinizin başına otomatik eklenir.
-              </p>
-            </FormItem>
-          ) : null}
+            <div className="grid gap-5 sm:grid-cols-2">
+              <FormField
+                control={form.control}
+                name="district"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>
+                      İlçe
+                      <RequiredMark />
+                    </FormLabel>
+                    <FormControl>
+                      <div className="relative">
+                        <select
+                          {...field}
+                          onChange={(e) => {
+                            field.onChange(e);
+                            // ilçe değişince alt zincir sıfırlanır
+                            form.setValue("mahalle", "", {
+                              shouldValidate: false,
+                            });
+                            resetAddressChain();
+                          }}
+                          aria-label="İlçe seçin"
+                          className={selectClasses}
+                        >
+                          <option value="" disabled>
+                            İlçe seçin
+                          </option>
+                          {avrupaDistricts.length > 0 ? (
+                            <optgroup label="Avrupa Yakası">
+                              {avrupaDistricts.map((d) => (
+                                <option key={d.name} value={d.name}>
+                                  {d.name}
+                                </option>
+                              ))}
+                            </optgroup>
+                          ) : null}
+                          {anadoluDistricts.length > 0 ? (
+                            <optgroup label="Anadolu Yakası">
+                              {anadoluDistricts.map((d) => (
+                                <option key={d.name} value={d.name}>
+                                  {d.name}
+                                </option>
+                              ))}
+                            </optgroup>
+                          ) : null}
+                        </select>
+                        <ChevronDown className="pointer-events-none absolute right-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
+                      </div>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="mahalle"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>
+                      Mahalle
+                      {selectedNeighborhoods.length > 0 ? <RequiredMark /> : null}
+                    </FormLabel>
+                    <FormControl>
+                      <div className="relative">
+                        <select
+                          {...field}
+                          disabled={
+                            !selectedDistrictName ||
+                            selectedNeighborhoods.length === 0
+                          }
+                          onChange={(e) => {
+                            field.onChange(e);
+                            onMahalleChange(e.target.value);
+                          }}
+                          aria-label="Mahalle seçin"
+                          className={selectClasses}
+                        >
+                          {selectedNeighborhoods.length === 0 ? (
+                            <option value="">
+                              {selectedDistrictName
+                                ? "Bu ilçe için mahalle listesi yok"
+                                : "Önce ilçe seçin"}
+                            </option>
+                          ) : (
+                            <option value="" disabled>
+                              Mahalle seçin
+                            </option>
+                          )}
+                          {selectedNeighborhoods.map((n) => (
+                            <option key={n} value={n}>
+                              {n}
+                            </option>
+                          ))}
+                        </select>
+                        <ChevronDown
+                          className="pointer-events-none absolute right-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
+                          aria-hidden="true"
+                        />
+                      </div>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            {/* Sokak/cadde: mahalle verisinden dropdown; liste yoksa
+                veya kullanıcı isterse elle giriş */}
+            <FormField
+              control={form.control}
+              name="sokak"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>
+                    Sokak / Cadde
+                    <RequiredMark />
+                  </FormLabel>
+                  <FormControl>
+                    <div className="space-y-2">
+                      {streetsLoading ? (
+                        <div className="relative">
+                          <select
+                            disabled
+                            aria-label="Sokak listesi yükleniyor"
+                            className={selectClasses}
+                          >
+                            <option>Sokaklar yükleniyor…</option>
+                          </select>
+                          <Loader2
+                            className="pointer-events-none absolute right-3 top-1/2 size-4 -translate-y-1/2 animate-spin text-muted-foreground"
+                            aria-hidden="true"
+                          />
+                        </div>
+                      ) : !selectedMahalle ? (
+                        /* Mahalle seçilmeden sokak zinciri başlamaz */
+                        <div className="relative">
+                          <select
+                            disabled
+                            aria-label="Önce mahalle seçin"
+                            className={selectClasses}
+                          >
+                            <option>Önce mahalle seçin</option>
+                          </select>
+                        </div>
+                      ) : streets.length > 0 && !sokakOther ? (
+                        <div className="relative">
+                          <select
+                            value={sokakChoice}
+                            onChange={(e) => {
+                              const v = e.target.value;
+                              setSokakChoice(v);
+                              if (v === OTHER_STREET) {
+                                setSokakOther(true);
+                                form.setValue("sokak", "", {
+                                  shouldValidate: false,
+                                });
+                              } else {
+                                form.setValue("sokak", v, {
+                                  shouldValidate: false,
+                                });
+                              }
+                            }}
+                            aria-label="Sokak/cadde seçin"
+                            className={selectClasses}
+                          >
+                            <option value="" disabled>
+                              Sokak/cadde seçin
+                            </option>
+                            {streets.map((s) => (
+                              <option key={s} value={s}>
+                                {s}
+                              </option>
+                            ))}
+                            <option value={OTHER_STREET}>
+                              Diğer (elle yazacağım)
+                            </option>
+                          </select>
+                          <ChevronDown
+                            className="pointer-events-none absolute right-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
+                            aria-hidden="true"
+                          />
+                        </div>
+                      ) : (
+                        <Input
+                          placeholder="Sokak/cadde adını yazın (örn: Atatürk Cad.)"
+                          autoComplete="off"
+                          maxLength={120}
+                          value={field.value ?? ""}
+                          onChange={(e) => field.onChange(e.target.value)}
+                        />
+                      )}
+                      {sokakOther && streets.length > 0 ? (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setSokakOther(false);
+                            setSokakChoice("");
+                            form.setValue("sokak", "", {
+                              shouldValidate: false,
+                            });
+                          }}
+                          className="text-xs font-medium text-primary hover:underline"
+                        >
+                          ← Listeden seçmek istiyorum
+                        </button>
+                      ) : null}
+                    </div>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <div className="grid gap-5 sm:grid-cols-2">
+              <FormField
+                control={form.control}
+                name="binaNo"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>
+                      Bina No
+                      <RequiredMark />
+                    </FormLabel>
+                    <FormControl>
+                      <div className="space-y-2">
+                        {binaOther ? (
+                          <Input
+                            placeholder="Örn: 12A"
+                            autoComplete="off"
+                            maxLength={10}
+                            aria-label="Bina numarasını yazın"
+                            value={field.value ?? ""}
+                            onChange={(e) => field.onChange(e.target.value)}
+                          />
+                        ) : (
+                          <div className="relative">
+                            <select
+                              {...field}
+                              value={field.value ?? ""}
+                              onChange={(e) => {
+                                if (e.target.value === OTHER_NO) {
+                                  setBinaOther(true);
+                                  form.setValue("binaNo", "", {
+                                    shouldValidate: false,
+                                  });
+                                } else {
+                                  field.onChange(e);
+                                }
+                              }}
+                              aria-label="Bina numarası seçin"
+                              className={selectClasses}
+                            >
+                              <option value="" disabled>
+                                Bina no seçin
+                              </option>
+                              {BINA_OPTIONS.map((n) => (
+                                <option key={n} value={n}>
+                                  {n}
+                                </option>
+                              ))}
+                              <option value={OTHER_NO}>
+                                Diğer (elle yazacağım)
+                              </option>
+                            </select>
+                            <ChevronDown
+                              className="pointer-events-none absolute right-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
+                              aria-hidden="true"
+                            />
+                          </div>
+                        )}
+                        {binaOther ? (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setBinaOther(false);
+                              form.setValue("binaNo", "", {
+                                shouldValidate: false,
+                              });
+                            }}
+                            className="text-xs font-medium text-primary hover:underline"
+                          >
+                            ← Listeden seçmek istiyorum
+                          </button>
+                        ) : null}
+                      </div>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="daireNo"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Daire</FormLabel>
+                    <FormControl>
+                      <div className="space-y-2">
+                        {daireOther ? (
+                          <Input
+                            placeholder="Örn: Z12"
+                            autoComplete="off"
+                            maxLength={10}
+                            aria-label="Daire numarasını yazın"
+                            value={field.value ?? ""}
+                            onChange={(e) => field.onChange(e.target.value)}
+                          />
+                        ) : (
+                          <div className="relative">
+                            <select
+                              {...field}
+                              value={field.value ?? ""}
+                              onChange={(e) => {
+                                if (e.target.value === OTHER_NO) {
+                                  setDaireOther(true);
+                                  form.setValue("daireNo", "", {
+                                    shouldValidate: false,
+                                  });
+                                } else {
+                                  field.onChange(e);
+                                }
+                              }}
+                              aria-label="Daire numarası seçin"
+                              className={selectClasses}
+                            >
+                              <option value="">Daire seçin (opsiyonel)</option>
+                              {DAIRE_OPTIONS.map((n) => (
+                                <option key={n} value={n}>
+                                  {n}
+                                </option>
+                              ))}
+                              <option value={OTHER_NO}>
+                                Diğer (elle yazacağım)
+                              </option>
+                            </select>
+                            <ChevronDown
+                              className="pointer-events-none absolute right-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
+                              aria-hidden="true"
+                            />
+                          </div>
+                        )}
+                        {daireOther ? (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setDaireOther(false);
+                              form.setValue("daireNo", "", {
+                                shouldValidate: false,
+                              });
+                            }}
+                            className="text-xs font-medium text-primary hover:underline"
+                          >
+                            ← Listeden seçmek istiyorum
+                          </button>
+                        ) : null}
+                      </div>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            {/* Canlı adres özeti: gönderilecek birleşik adresi gösterir. */}
+            <div
+              aria-live="polite"
+              className="flex items-start gap-2 rounded-lg border border-dashed bg-background px-3 py-2.5"
+            >
+              <MapPin
+                className="mt-0.5 size-4 shrink-0 text-primary"
+                aria-hidden="true"
+              />
+              {addressSummary ? (
+                <p className="text-sm leading-relaxed text-foreground">
+                  <span className="sr-only">
+                    Talebinizde görünecek adres:{" "}
+                  </span>
+                  <span className="font-medium">{addressSummary}</span>
+                </p>
+              ) : (
+                <p className="text-sm text-muted-foreground">
+                  İlçe ve mahalle seçtiğinizde adresiniz burada özetlenir.
+                </p>
+              )}
+            </div>
+          </fieldset>
 
           <FormField
             control={form.control}
-            name="address"
+            name="serviceType"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Adres</FormLabel>
+                <FormLabel>Hizmet</FormLabel>
                 <FormControl>
-                  <Textarea
-                    placeholder="Sokak, bina ve daire bilgisi (örn: Atatürk Cad. No:10 D:3)"
-                    rows={2}
-                    className="resize-none"
-                    {...field}
-                  />
+                  <div className="relative">
+                    <select {...field} aria-label="Hizmet seçin" className={selectClasses}>
+                      <option value="">Hizmet seçin (opsiyonel)</option>
+                      {services.map((service) => (
+                        <option key={service} value={service}>
+                          {service}
+                        </option>
+                      ))}
+                    </select>
+                    <ChevronDown className="pointer-events-none absolute right-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
+                  </div>
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -342,11 +861,15 @@ export function RequestForm({ districts, services }: RequestFormProps) {
             name="message"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Arıza Açıklaması</FormLabel>
+                <FormLabel>
+                  Arıza Açıklaması
+                  <RequiredMark />
+                </FormLabel>
                 <FormControl>
                   <Textarea
                     placeholder="Örn: Sabahdan beri sigorta sürekli atıyor, mutfakta priz çalışmıyor..."
                     rows={4}
+                    maxLength={2000}
                     {...field}
                   />
                 </FormControl>
@@ -375,7 +898,11 @@ export function RequestForm({ districts, services }: RequestFormProps) {
                       className="block cursor-pointer text-xs leading-relaxed text-muted-foreground sm:text-sm"
                     >
                       <span className="font-medium text-foreground">
-                        KVKK Aydınlatma Metni'ni okudum.
+                        KVKK Aydınlatma Metni&apos;ni okudum.
+                        <span className="text-destructive" aria-hidden="true">
+                          {" "}
+                          *
+                        </span>
                       </span>{" "}
                       Ad soyad, telefon ve adres bilgilerimin, arıza talebime
                       dönüş yapılması ve hizmetin sunulması amacıyla KVKK
@@ -387,7 +914,7 @@ export function RequestForm({ districts, services }: RequestFormProps) {
                       target="_blank"
                       className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline"
                     >
-                      Aydınlatma Metni'ni okumak için tıklayın
+                      Aydınlatma Metni&apos;ni okumak için tıklayın
                       <ExternalLink className="size-3" aria-hidden="true" />
                     </Link>
                   </div>

@@ -119,6 +119,7 @@ export default async function ContactPage() {
           <RequestForm
             districts={districts.map((d) => ({
               name: d.name,
+              side: d.side,
               neighborhoods: parseNeighborhoods(d.neighborhoods),
             }))}
             services={services.map((s) => s.title)}

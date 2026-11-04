@@ -23,6 +23,17 @@ export const serviceRequestSchema = z.object({
     .transform((v) => v.replace(/[^\d+]/g, "")),
   address: z.string().trim().min(10, "Adres en az 10 karakter olmalı").max(500),
   district: z.string().trim().min(2, "İlçe seçiniz").max(60),
+  // Mahalle: formda ilçe seçimine bağlı kademeli dropdown. Sunucu adresi
+  // "X Mahallesi, sokak detayı" biçiminde birleşik aldığından bu alan
+  // yalnızca taşınır/opsiyoneldir; zorunluluğu istemci tarafında ilçenin
+  // mahalle verisine göre dinamik uygulanır.
+  mahalle: z.string().trim().max(80).optional().default(""),
+  // Kademeli adres devamı: sokak/cadde, bina ve daire. İstemci bunları
+  // "sokak No:bina D:daire" biçiminde birleştirip `address` alanına ekler;
+  // sunucu için opsiyonel taşıma alanlarıdır (allow-list'te tutulurlar).
+  sokak: z.string().trim().max(120).optional().default(""),
+  binaNo: z.string().trim().max(10).optional().default(""),
+  daireNo: z.string().trim().max(10).optional().default(""),
   serviceType: z.string().trim().max(100).optional().default(""),
   message: z.string().trim().min(10, "Arızayı kısaca anlatın (en az 10 karakter)").max(2000),
   // Honeypot: gerçek kullanıcılar bu alanı görmez/doldurmaz; botlar doldurur.
@@ -99,7 +110,7 @@ export const districtUpsertSchema = z.object({
   name: z.string().trim().min(2).max(60),
   slug: z.string().trim().regex(SLUG_REGEX).max(60),
   content: z.string().trim().min(30),
-  neighborhoods: z.string().trim().max(2000).default(""),
+  neighborhoods: z.string().trim().max(4000, "Mahalle listesi en fazla 4000 karakter olabilir").default(""),
   side: z.enum(["AVRUPA", "ANADOLU"]).default("AVRUPA"),
   active: z.boolean().default(true),
   metaTitle: z.string().trim().max(70).optional().default(""),

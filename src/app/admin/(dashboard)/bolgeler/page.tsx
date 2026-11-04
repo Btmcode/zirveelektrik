@@ -331,7 +331,7 @@ export default function AdminDistrictsPage() {
               <Textarea
                 {...form.register("neighborhoods")}
                 placeholder={"Fikirtepe\nCaferağa\nBostancı"}
-                className="h-32"
+                className="h-48 font-mono text-xs"
               />
             </Field>
 
