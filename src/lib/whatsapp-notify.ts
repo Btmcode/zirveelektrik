@@ -1,7 +1,12 @@
 import "server-only";
 import { db } from "@/lib/db";
 import { SITE } from "@/lib/site";
-import { formatRequestCard, normalizeWaDigits, type RequestCardData } from "@/lib/whatsapp-card";
+import { getSettings } from "@/lib/settings";
+import {
+  normalizeWaDigits,
+  renderRequestCard,
+  type RequestCardData,
+} from "@/lib/whatsapp-card";
 
 /**
  * WhatsApp otomatik bildirim servisi (sunucu tarafı).
@@ -130,7 +135,10 @@ export async function notifyOwnerOfRequest(
   request: RequestCardData
 ): Promise<{ status: "sent" | "skipped" | "failed"; provider?: WaProvider; error?: string }> {
   try {
-    const text = formatRequestCard(request);
+    // Admin panosunda kaydedilmiş özel şablon varsa onu kullan; yoksa yerleşik kart.
+    // getSettings hatalarda defaults'a düşer; şablon okunamazsa akış etkilenmez.
+    const settings = await getSettings();
+    const text = renderRequestCard(request, settings.waTemplate);
     const result = await sendWhatsAppToOwner(text);
     if (result.status === "sent") {
       await db.serviceRequest.update({

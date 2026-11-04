@@ -13,6 +13,8 @@ export interface SiteSettings {
   email: string;
   address: string;
   workingHours: string;
+  /** WhatsApp "Acil Çağrı Kartı" şablonu; boşsa yerleşik varsayılan kart kullanılır. */
+  waTemplate: string;
 }
 
 const CACHE_TTL_MS = 30 * 1000;
@@ -24,6 +26,7 @@ export const SETTINGS_DEFAULTS: SiteSettings = {
   email: SITE.email,
   address: `${SITE.address}, ${SITE.addressLocality}/${SITE.addressRegion}`,
   workingHours: SITE.workingHours,
+  waTemplate: "",
 };
 
 export async function getSettings(): Promise<SiteSettings> {
@@ -37,6 +40,7 @@ export async function getSettings(): Promise<SiteSettings> {
       email: map["email"] || SETTINGS_DEFAULTS.email,
       address: map["address"] || SETTINGS_DEFAULTS.address,
       workingHours: map["workingHours"] || SETTINGS_DEFAULTS.workingHours,
+      waTemplate: map["waTemplate"] ?? "",
     };
     cache = { data, at: Date.now() };
     return data;

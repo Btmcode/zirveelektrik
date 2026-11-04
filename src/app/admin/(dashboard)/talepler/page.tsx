@@ -65,7 +65,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { REQUEST_STATUS, REQUEST_STATUS_ORDER } from "@/lib/site";
 import { formatDateTimeTr } from "@/lib/utils-format";
 import {
-  formatRequestCard,
+  renderRequestCard,
   buildMapsLink,
   buildCustomerWaLink,
   buildOwnerWaLink,
@@ -115,6 +115,16 @@ export default function AdminRequestsPage() {
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [rowUpdating, setRowUpdating] = useState<string | null>(null);
   const [dropping, setDropping] = useState<string | null>(null);
+  /** Admin şablonu (Ayarlar'dan); null ise yerleşik varsayılan kart kullanılır. */
+  const [waTemplate, setWaTemplate] = useState<string | null>(null);
+
+  useEffect(() => {
+    // Manuel "WhatsApp'a Düşür" için admin şablonunu bir kez yükle; hata olursa
+    // yerleşik varsayılan kart kullanılır (null → renderRequestCard fallback).
+    apiFetch<{ settings: { waTemplate?: string } }>("/api/admin/settings")
+      .then((data) => setWaTemplate(data.settings.waTemplate ?? ""))
+      .catch(() => setWaTemplate(null));
+  }, []);
 
   /** Bekleyen en yeni acil çağrı (liste createdAt desc sıralı). */
   const latestNew = requests?.find((r) => r.status === "NEW") ?? null;
@@ -182,7 +192,7 @@ export default function AdminRequestsPage() {
    * Bildirim zamanı sunucuda notifiedAt olarak işaretlenir.
    */
   function dropToWhatsApp(r: AdminRequest) {
-    const url = buildOwnerWaLink(formatRequestCard(r));
+    const url = buildOwnerWaLink(renderRequestCard(r, waTemplate));
     setDropping(r.id);
     apiFetch<{ request: AdminRequest }>(`/api/admin/requests/${r.id}`, {
       method: "PATCH",

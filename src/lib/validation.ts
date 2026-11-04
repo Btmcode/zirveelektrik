@@ -57,6 +57,14 @@ export const requestUpdateSchema = z.object({
   markNotified: z.boolean().optional(),
 });
 
+/** WhatsApp şablon test gönderimi: editördeki hazır (render edilmiş) kart metni. */
+export const waTemplateTestSchema = z.object({
+  text: z
+    .string()
+    .min(1, "Gönderilecek metin boş olamaz")
+    .max(4000, "Test metni en fazla 4000 karakter olabilir"),
+});
+
 // ---------- Admin içerik şemaları ----------
 
 export const serviceUpsertSchema = z.object({
@@ -120,4 +128,6 @@ export const settingsPatchSchema = z.object({
   email: z.string().trim().email().max(120).optional(),
   address: z.string().trim().max(200).optional(),
   workingHours: z.string().trim().max(100).optional(),
+  // WhatsApp mesaj şablonu: biçim korunsun diye trim EDİLMEZ (bilinçli satır sonu/space).
+  waTemplate: z.string().max(4000, "Şablon en fazla 4000 karakter olabilir").optional(),
 });

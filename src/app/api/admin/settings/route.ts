@@ -8,7 +8,7 @@ import { jsonError, requireAdmin, unexpectedError, zodErrorResponse } from "../_
  * GET   /api/admin/settings - site iletişim ayarları.
  * PATCH /api/admin/settings - ayar güncelleme (upsert) + cache invalidation.
  */
-const SETTING_KEYS = ["phone", "whatsapp", "email", "address", "workingHours"] as const;
+const SETTING_KEYS = ["phone", "whatsapp", "email", "address", "workingHours", "waTemplate"] as const;
 
 export async function GET(request: Request) {
   try {
@@ -25,6 +25,7 @@ export async function GET(request: Request) {
         email: map["email"] ?? "",
         address: map["address"] ?? "",
         workingHours: map["workingHours"] ?? "",
+        waTemplate: map["waTemplate"] ?? "",
       },
     });
   } catch (error) {
@@ -68,6 +69,7 @@ export async function PATCH(request: Request) {
         email: map["email"] ?? "",
         address: map["address"] ?? "",
         workingHours: map["workingHours"] ?? "",
+        waTemplate: map["waTemplate"] ?? "",
       },
     });
   } catch (error) {

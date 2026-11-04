@@ -95,4 +95,61 @@ export function formatRequestCard(r: RequestCardData): string {
   return lines.join("\n");
 }
 
-// encoding doğrulama satırı
+// ---------- Şablon motoru (admin Ayarlar'dan düzenlenebilir) ----------
+
+/** Şablonda kullanılabilen tokenlar; editörde çip olarak listelenir. */
+export interface WaTemplateToken {
+  token: string;
+  label: string;
+}
+
+export const WA_TEMPLATE_TOKENS: WaTemplateToken[] = [
+  { token: "{takipKodu}", label: "Takip Kodu" },
+  { token: "{adSoyad}", label: "Müşteri Adı" },
+  { token: "{telefon}", label: "Telefon" },
+  { token: "{bolge}", label: "Bölge (İlçe)" },
+  { token: "{adres}", label: "Açık Adres" },
+  { token: "{arizaTuru}", label: "Arıza Türü" },
+  { token: "{not}", label: "Müşteri Notu" },
+  { token: "{saat}", label: "Saat (TR)" },
+  { token: "{haritaLinki}", label: "Google Maps Linki" },
+];
+
+/** Varsayılan kartın token'lı metin temsili; editörde "Varsayılanı Getir" ile yüklenir. */
+export const DEFAULT_WA_TEMPLATE = [
+  "🚨 *7/24 YENİ ACİL SERVİS ÇAĞRISI* ⚡",
+  "",
+  "👤 *Müşteri:* {adSoyad}",
+  "📞 *Telefon:* {telefon}",
+  "📍 *Bölge:* {bolge}",
+  "🏠 *Açık Adres:* {adres}",
+  "🛠️ *Arıza Türü:* {arizaTuru}",
+  "📝 *Not:* {not}",
+  "🕐 *Saat:* {saat} (7/24 Nöbetçi Ekip)",
+  "🎫 *Takip Kodu:* {takipKodu}",
+  "",
+  "🗺️ *Haritada Aç:* {haritaLinki}",
+].join("\n");
+
+/**
+ * Talebi, admin şablonuna göre WhatsApp metnine çevirir.
+ * Şablon boş/tanımsızsa yerleşik varsayılan kart (formatRequestCard) kullanılır.
+ * Tanınmayan token'lar düzenlenebilsin diye metin olarak bırakılır (sessizce silinmez);
+ * böylece yazım hatası önizlemede görünür ve düzeltilebilir.
+ */
+export function renderRequestCard(r: RequestCardData, template?: string | null): string {
+  if (!template || !template.trim()) return formatRequestCard(r);
+  const phoneDisplay = formatTrPhoneDisplay(r.phone);
+  const time = formatTimeTr(r.createdAt);
+  const maps = buildMapsLink(r.address, r.district);
+  return template
+    .replaceAll("{takipKodu}", r.code)
+    .replaceAll("{adSoyad}", r.name)
+    .replaceAll("{telefon}", phoneDisplay)
+    .replaceAll("{bolge}", r.district)
+    .replaceAll("{adres}", r.address)
+    .replaceAll("{arizaTuru}", r.serviceType || "Belirtilmemiş")
+    .replaceAll("{not}", r.message)
+    .replaceAll("{saat}", time)
+    .replaceAll("{haritaLinki}", maps);
+}
