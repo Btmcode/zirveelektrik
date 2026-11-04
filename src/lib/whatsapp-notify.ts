@@ -86,14 +86,23 @@ async function sendViaCallMeBot(
   const url =
     `https://api.callmebot.com/whatsapp.php?phone=${encodeURIComponent("+" + toDigits)}` +
     `&text=${encodeURIComponent(text)}&apikey=${encodeURIComponent(apiKey)}`;
-  const res = await fetch(url, {
-    signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
-  });
-  if (!res.ok) {
-    console.error("[wa-notify] CallMeBot hatası:", res.status);
-    return { ok: false, error: `callmebot:${res.status}` };
+  // CallMeBot arada 5xx/timeout verebiliyor; kısa aralıkla 1 kez yeniden denenir.
+  let lastError = "callmebot";
+  for (let attempt = 1; attempt <= 2; attempt++) {
+    try {
+      const res = await fetch(url, {
+        signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+      });
+      if (res.ok) return { ok: true };
+      console.error(`[wa-notify] CallMeBot hatası (deneme ${attempt}/2):`, res.status);
+      lastError = `callmebot:${res.status}`;
+    } catch (err) {
+      console.error(`[wa-notify] CallMeBot ağ hatası (deneme ${attempt}/2):`, err);
+      lastError = "callmebot:network";
+    }
+    if (attempt === 1) await new Promise((r) => setTimeout(r, 1500));
   }
-  return { ok: true };
+  return { ok: false, error: lastError };
 }
 
 /** Metni sahip numarasına gönderir; env yoksa skipped döner. */

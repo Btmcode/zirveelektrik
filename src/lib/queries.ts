@@ -134,7 +134,7 @@ export async function getDistrictNames() {
     return await cached("dist:names", TTL_LIST, () =>
       db.district.findMany({
         where: { active: true },
-        select: { name: true, slug: true, side: true },
+        select: { name: true, slug: true, side: true, neighborhoods: true },
         orderBy: { name: "asc" },
       })
     );

@@ -20,6 +20,14 @@ import { getActiveFaqs, getDistrictNames, getServiceTitles } from "@/lib/queries
 import { getSettings, telHref, waHref } from "@/lib/settings";
 import { MAPS_DIRECTIONS_URL, MAPS_EMBED_URL, SITE } from "@/lib/site";
 
+/** Satır bazlı neighborhoods alanını temiz listeye çevirir. */
+function parseNeighborhoods(raw: string | null | undefined): string[] {
+  return (raw ?? "")
+    .split("\n")
+    .map((s) => s.trim())
+    .filter(Boolean);
+}
+
 export const dynamic = "force-dynamic";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -109,7 +117,10 @@ export default async function ContactPage() {
         <div className="mt-10 grid gap-8 lg:grid-cols-2 lg:gap-12">
           {/* Sol - form */}
           <RequestForm
-            districts={districts.map((d) => d.name)}
+            districts={districts.map((d) => ({
+              name: d.name,
+              neighborhoods: parseNeighborhoods(d.neighborhoods),
+            }))}
             services={services.map((s) => s.title)}
           />
 

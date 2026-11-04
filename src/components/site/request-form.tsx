@@ -42,7 +42,7 @@ const selectClasses =
 type FormInput = z.input<typeof serviceRequestSchema>;
 
 interface RequestFormProps {
-  districts: string[];
+  districts: { name: string; neighborhoods: string[] }[];
   services: string[];
 }
 
@@ -54,6 +54,8 @@ interface ApiErrorBody {
 
 export function RequestForm({ districts, services }: RequestFormProps) {
   const [successCode, setSuccessCode] = useState<string | null>(null);
+  // Kademeli adres seçimi: ilçe → o ilçenin mahalleleri (opsiyonel, adresin başına eklenir)
+  const [mahalle, setMahalle] = useState("");
   // Form yüklendiği anda damgalanır (yalnızca ilk render'da hesaplanır);
   // sunucu 3 sn'den hızlı gönderimleri bot sayar.
   const [mountedAt] = useState(() => Date.now());
@@ -72,12 +74,20 @@ export function RequestForm({ districts, services }: RequestFormProps) {
     },
   });
 
+  // useForm SONRASI türetilir (TDZ hatasına karşı sıralama önemli).
+  const selectedDistrictName = form.watch("district");
+  const selectedNeighborhoods =
+    districts.find((d) => d.name === selectedDistrictName)?.neighborhoods ?? [];
+
   async function onSubmit(values: ServiceRequestInput) {
     try {
+      // Mahalle seçildiyse adresin başına eklenir (WhatsApp kartı ve harita linki
+      // dahil tek adres metni olarak akar).
+      const address = [mahalle, values.address].filter(Boolean).join(", ");
       const res = await fetch("/api/requests", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...values, formTs: mountedAt }),
+        body: JSON.stringify({ ...values, address, formTs: mountedAt }),
       });
       const data = (await res.json().catch(() => null)) as ApiErrorBody | null;
 
@@ -85,6 +95,7 @@ export function RequestForm({ districts, services }: RequestFormProps) {
         const code = (data as { code?: string }).code;
         if (code) setSuccessCode(code);
         form.reset();
+        setMahalle("");
         toast.success("Talebiniz alındı", {
           description: code
             ? `Takip kodunuz: ${code}. Ustalarımız en kısa sürede sizi arayacak.`
@@ -143,6 +154,7 @@ export function RequestForm({ districts, services }: RequestFormProps) {
           onClick={() => {
             setSuccessCode(null);
             form.reset();
+            setMahalle("");
           }}
         >
           Yeni Talep Oluştur
@@ -224,13 +236,21 @@ export function RequestForm({ districts, services }: RequestFormProps) {
                   <FormLabel>İlçe</FormLabel>
                   <FormControl>
                     <div className="relative">
-                      <select {...field} aria-label="İlçe seçin" className={selectClasses}>
+                      <select
+                        {...field}
+                        onChange={(e) => {
+                          field.onChange(e);
+                          setMahalle(""); // ilçe değişince mahalle seçimini sıfırla
+                        }}
+                        aria-label="İlçe seçin"
+                        className={selectClasses}
+                      >
                         <option value="" disabled>
                           İlçe seçin
                         </option>
-                        {districts.map((district) => (
-                          <option key={district} value={district}>
-                            {district}
+                        {districts.map((d) => (
+                          <option key={d.name} value={d.name}>
+                            {d.name}
                           </option>
                         ))}
                       </select>
@@ -266,6 +286,38 @@ export function RequestForm({ districts, services }: RequestFormProps) {
             />
           </div>
 
+          {/* Kademeli adres seçimi: ilçenin mahalle verisi varsa dropdown açılır.
+              RHF dışı bağımsız state — gönderimde adresin başına eklenir. */}
+          {selectedNeighborhoods.length > 0 ? (
+            <FormItem>
+              <FormLabel>Mahalle</FormLabel>
+              <FormControl>
+                <div className="relative">
+                  <select
+                    value={mahalle}
+                    onChange={(e) => setMahalle(e.target.value)}
+                    aria-label="Mahalle seçin"
+                    className={selectClasses}
+                  >
+                    <option value="">Mahalle seçin (opsiyonel)</option>
+                    {selectedNeighborhoods.map((n) => (
+                      <option key={n} value={n}>
+                        {n}
+                      </option>
+                    ))}
+                  </select>
+                  <ChevronDown
+                    className="pointer-events-none absolute right-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
+                    aria-hidden="true"
+                  />
+                </div>
+              </FormControl>
+              <p className="text-xs text-muted-foreground">
+                Seçilirse adresinizin başına otomatik eklenir.
+              </p>
+            </FormItem>
+          ) : null}
+
           <FormField
             control={form.control}
             name="address"
@@ -274,7 +326,7 @@ export function RequestForm({ districts, services }: RequestFormProps) {
                 <FormLabel>Adres</FormLabel>
                 <FormControl>
                   <Textarea
-                    placeholder="Mahalle, sokak, bina ve daire bilgisi"
+                    placeholder="Sokak, bina ve daire bilgisi (örn: Atatürk Cad. No:10 D:3)"
                     rows={2}
                     className="resize-none"
                     {...field}

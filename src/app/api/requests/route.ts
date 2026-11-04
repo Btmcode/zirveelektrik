@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextResponse, after } from "next/server";
 import { randomInt } from "node:crypto";
 import { db } from "@/lib/db";
 import { isAllowedOrigin } from "@/lib/auth";
@@ -107,24 +107,26 @@ export async function POST(request: Request) {
       },
     });
 
-    // 7) WhatsApp otomatik bildirim: sahip numarasına acil çağrı kartı düşürülür.
-    //    Non-fatal: sağlayıcı tanımlı değilse veya hata olursa akış etkilenmez;
-    //    yönetim panelinde manuel "WhatsApp'a Düşür" yedeği vardır.
-    const notification = await notifyOwnerOfRequest({
-      code: created.code,
-      name: created.name,
-      phone: created.phone,
-      address: created.address,
-      district: created.district,
-      serviceType: created.serviceType,
-      message: created.message,
-      createdAt: created.createdAt,
+    // 7) WhatsApp otomatik bildirim: formun "alındı" yanıtı beklemeden, yanıt
+    //    SONRASINA planlanır (after()). Vercel serverless'ta fonksiyon, gönderim
+    //    bitene kadar canlı tutulur; hata olursa yalnızca log'lanır (non-fatal).
+    after(async () => {
+      const notification = await notifyOwnerOfRequest({
+        code: created.code,
+        name: created.name,
+        phone: created.phone,
+        address: created.address,
+        district: created.district,
+        serviceType: created.serviceType,
+        message: created.message,
+        createdAt: created.createdAt,
+      });
+      if (notification.status === "failed") {
+        console.warn(
+          `[api/requests] ${created.code} WhatsApp bildirimi başarısız (${notification.error ?? "?"}); manuel düşürme açık`
+        );
+      }
     });
-    if (notification.status === "failed") {
-      console.warn(
-        `[api/requests] ${created.code} WhatsApp bildirimi başarısız (${notification.error ?? "?"}); manuel düşürme açık`
-      );
-    }
 
     return NextResponse.json(
       { ok: true, code: created.code },
