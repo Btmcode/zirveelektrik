@@ -26,14 +26,30 @@ function tagList(tags: string): string[] {
     .filter(Boolean);
 }
 
+/** Tek yazılık uzun kuyruk etiketler varsayılan olarak katlanır. */
+const MAX_VISIBLE_TAGS = 10;
+
 /**
  * Blog listesi deneyimi: konu arama + etiket filtreleri + öne çıkan yazı.
  * Filtreleme tamamen istemci tarafındadır; en yeni yazı, filtre temizken
  * büyük "Öne Çıkan Yazı" kartında gösterilir.
+ *
+ * Etiket seli sorunu: onlarca etiketin tamamı ilk açılışta render edilirse
+ * filtre çubuğu 6+ satıra yayılıp içerik ekran dışına itiliyor; yalnızca en
+ * çok yazılı ilk MAX_VISIBLE_TAGS etiket gösterilir, kalanı "+N konu"
+ * düğmesinin arkasında katlanır.
  */
-export function BlogExplorer({ posts }: { posts: ExplorerPost[] }) {
+export function BlogExplorer({
+  posts,
+  initialTag = null,
+}: {
+  posts: ExplorerPost[];
+  /** Detay sayfasındaki etiket linklerinden gelen başlangıç filtresi. */
+  initialTag?: string | null;
+}) {
   const [query, setQuery] = useState("");
-  const [activeTag, setActiveTag] = useState<string | null>(null);
+  const [activeTag, setActiveTag] = useState<string | null>(initialTag);
+  const [showAllTags, setShowAllTags] = useState(false);
   const [, startTransition] = useTransition();
 
   const allTags = useMemo(() => {
@@ -64,6 +80,18 @@ export function BlogExplorer({ posts }: { posts: ExplorerPost[] }) {
   const showFeatured = !isFilterActive && filtered.length > 0;
   const featured = showFeatured ? filtered[0] : null;
   const rest = showFeatured ? filtered.slice(1) : filtered;
+
+  // Etiket katlama: aktif filtre katlanmış kısımdaysa otomatik genişletilir
+  // ki kullanıcı seçimini görsün.
+  const activeTagHidden =
+    activeTag !== null &&
+    activeTag !== "" &&
+    !allTags.slice(0, MAX_VISIBLE_TAGS).some(([tag]) => tag === activeTag);
+  const expanded = showAllTags || activeTagHidden;
+  const visibleTags = expanded
+    ? allTags
+    : allTags.slice(0, MAX_VISIBLE_TAGS);
+  const hiddenTagCount = allTags.length - MAX_VISIBLE_TAGS;
 
   const chipClass = (active: boolean) =>
     [
@@ -109,7 +137,7 @@ export function BlogExplorer({ posts }: { posts: ExplorerPost[] }) {
               <LayoutGrid className="size-3.5" aria-hidden="true" />
               Tümü ({posts.length})
             </button>
-            {allTags.map(([tag, count]) => (
+            {visibleTags.map(([tag, count]) => (
               <button
                 key={tag}
                 type="button"
@@ -122,6 +150,20 @@ export function BlogExplorer({ posts }: { posts: ExplorerPost[] }) {
                 {tag} ({count})
               </button>
             ))}
+            {hiddenTagCount > 0 ? (
+              <button
+                type="button"
+                onClick={() => setShowAllTags((v) => !v)}
+                aria-expanded={expanded}
+                className={chipClass(false)}
+              >
+                {expanded ? (
+                  "Daha az"
+                ) : (
+                  <>+{hiddenTagCount} konu</>
+                )}
+              </button>
+            ) : null}
           </div>
         ) : null}
       </div>

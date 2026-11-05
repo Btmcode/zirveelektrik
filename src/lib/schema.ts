@@ -185,6 +185,62 @@ export function faqSchema(faqs: { question: string; answer: string }[]) {
   };
 }
 
+/**
+ * İlçe bazlı hizmet şeması (GEO/AEO).
+ *
+ * "Kadıköy elektrikçi", "Bakırköy acil elektrikçi" gibi yerel sorgularda
+ * hem klasik arama motorlarına hem de AI yanıt motorlarına ilçe → mahalle
+ * ayrımında hizmet kapsamını bildirir. Mahalle adları District tablosundan,
+ * sokak sayıları UAVT dökümünden geldiği için kapsam iddiaları gerçek
+ * veriye dayanır (yanıt motorlarının alıntılayabileceği doğrulanabilir
+ * istatistik sinyali).
+ */
+export function districtServiceSchema(input: {
+  districtSlug: string;
+  districtName: string;
+  neighborhoods: string[];
+  serviceNames: string[];
+}) {
+  const districtPlace: Record<string, unknown> = {
+    "@type": "AdministrativeArea",
+    name: `${input.districtName}, İstanbul`,
+    containedInPlace: { "@type": "City", name: "İstanbul" },
+  };
+
+  return {
+    "@context": "https://schema.org",
+    "@type": "Service",
+    name: `${input.districtName} Elektrikçi Hizmeti`,
+    serviceType: "Acil Elektrikçi ve Arıza Tespiti",
+    description: `${input.districtName} ilçesinin ${input.neighborhoods.length} mahallesinde 7/24 acil elektrikçi, arıza tespiti ve tesisat hizmeti. Aynı gün servis, yerinde tespit, garantili işçilik.`,
+    url: `${SITE.url}/bolgeler/${input.districtSlug}`,
+    category: "Elektrikçi Hizmetleri",
+    provider: { "@id": `${SITE.url}/#organization` },
+    areaServed: [
+      { "@type": "City", name: "İstanbul" },
+      districtPlace,
+      ...input.neighborhoods.map((name) => ({
+        "@type": "Place",
+        name: `${name}, ${input.districtName}/İstanbul`,
+        containedInPlace: districtPlace,
+      })),
+    ],
+    availableChannel: {
+      "@type": "ServiceChannel",
+      servicePhone: SITE.phone,
+      serviceUrl: `${SITE.url}/iletisim`,
+    },
+    hasOfferCatalog: {
+      "@type": "OfferCatalog",
+      name: `${input.districtName} Elektrik Hizmetleri`,
+      itemListElement: input.serviceNames.map((name) => ({
+        "@type": "Offer",
+        itemOffered: { "@type": "Service", name },
+      })),
+    },
+  };
+}
+
 export function articleSchema(post: {
   slug: string;
   title: string;

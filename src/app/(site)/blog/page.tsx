@@ -8,6 +8,10 @@ import { getPublishedPosts } from "@/lib/queries";
 
 export const dynamic = "force-dynamic";
 
+interface BlogPageProps {
+  searchParams: Promise<{ tag?: string | string[] }>;
+}
+
 export async function generateMetadata(): Promise<Metadata> {
   return {
     title: "Blog - Elektrik Rehberleri: Sigorta, Kaçak ve Tesisat",
@@ -17,8 +21,25 @@ export async function generateMetadata(): Promise<Metadata> {
   };
 }
 
-export default async function BlogPage() {
+export default async function BlogPage({ searchParams }: BlogPageProps) {
   const posts = await getPublishedPosts();
+
+  // Detay sayfasındaki etiket linkleri (/blog?tag=...) burada filtre başlatır;
+  // yalnızca yayında yazısı olan bir etiket kabul edilir (beyaz liste).
+  const resolvedParams = await searchParams;
+  const rawTag = Array.isArray(resolvedParams.tag)
+    ? resolvedParams.tag[0]
+    : resolvedParams.tag;
+  const requestedTag = (rawTag ?? "").trim().slice(0, 40);
+  const validTags = new Set(
+    posts.flatMap((post) =>
+      post.tags
+        .split(",")
+        .map((tag) => tag.trim())
+        .filter(Boolean)
+    )
+  );
+  const initialTag = requestedTag && validTags.has(requestedTag) ? requestedTag : null;
 
   // İçeriği istemciye taşımamak için okuma süresi sunucuda hesaplanır
   const explorerPosts: ExplorerPost[] = posts.map((post) => ({
@@ -43,7 +64,7 @@ export default async function BlogPage() {
           description="Ev ve iş yerinizdeki elektrik sorunlarını anlamak için uzman ekibimizden pratik rehberler ve çözüm önerileri. Aradığınız konuyu aramak veya etiketle filtrelemek için araç çubuğunu kullanabilirsiniz."
         />
         {explorerPosts.length > 0 ? (
-          <BlogExplorer posts={explorerPosts} />
+          <BlogExplorer posts={explorerPosts} initialTag={initialTag} />
         ) : (
           <p className="rounded-xl border border-border bg-card p-10 text-center text-muted-foreground">
             Yakında yeni yazılar eklenecek.

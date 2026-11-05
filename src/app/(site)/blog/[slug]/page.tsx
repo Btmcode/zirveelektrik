@@ -2,8 +2,7 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { CalendarDays, Clock, ListTree, Tag, User } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
+import { CalendarDays, Clock, ListTree, User } from "lucide-react";
 import { Breadcrumbs } from "@/components/site/breadcrumbs";
 import { JsonLd } from "@/components/site/json-ld";
 import {
@@ -14,6 +13,7 @@ import { BlogCard } from "@/components/site/blog-card";
 import { CtaBanner } from "@/components/site/cta-banner";
 import { ArticleCtaCard } from "@/components/site/article-cta-card";
 import { ReadingProgress } from "@/components/site/reading-progress";
+import { ShareRow } from "@/components/site/share-row";
 import { articleSchema } from "@/lib/schema";
 import { getPostBySlug, getPublishedPosts } from "@/lib/queries";
 import { formatDateTr } from "@/lib/utils-format";
@@ -79,6 +79,12 @@ export default async function BlogDetailPage({ params }: BlogDetailPageProps) {
   const publishDate = post.publishedAt ?? post.updatedAt;
   const readingTime = calcReadingTime(post.content);
 
+  // Yayından sonra belirgin güncelleme varsa okuyucuya açıkça gösterilir
+  // (tazelik sinyali: kullanıcılar + Google/E-E-A-T için).
+  const isUpdated =
+    post.publishedAt !== null &&
+    post.updatedAt.getTime() - post.publishedAt.getTime() > 24 * 60 * 60 * 1000;
+
   // İçindekiler: 3+ H2 başlık varsa göster
   const toc = extractHeadings(post.content);
   const showToc = toc.length >= 3;
@@ -117,9 +123,14 @@ export default async function BlogDetailPage({ params }: BlogDetailPageProps) {
           {postTags.length > 0 ? (
             <div className="flex flex-wrap gap-1.5">
               {postTags.map((tag) => (
-                <Badge key={tag} variant="secondary">
+                <Link
+                  key={tag}
+                  href={`/blog?tag=${encodeURIComponent(tag)}`}
+                  className="inline-flex items-center rounded-full border border-transparent bg-secondary px-2.5 py-0.5 text-xs font-semibold text-secondary-foreground transition-colors hover:bg-secondary/70 focus-visible:outline-2 focus-visible:outline-ring"
+                  aria-label={`${tag} etiketindeki yazıları filtrele`}
+                >
                   {tag}
-                </Badge>
+                </Link>
               ))}
             </div>
           ) : null}
@@ -141,6 +152,14 @@ export default async function BlogDetailPage({ params }: BlogDetailPageProps) {
               <User className="size-4 text-primary" aria-hidden="true" />
               {post.author}
             </span>
+          </div>
+          {isUpdated ? (
+            <p className="mt-2 text-xs text-muted-foreground">
+              Son güncelleme: <time dateTime={post.updatedAt.toISOString()}>{formatDateTr(post.updatedAt)}</time>
+            </p>
+          ) : null}
+          <div className="mt-5 border-t border-dashed pt-4">
+            <ShareRow path={`/blog/${post.slug}`} title={post.title} />
           </div>
         </header>
 

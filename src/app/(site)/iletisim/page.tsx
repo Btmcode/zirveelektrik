@@ -19,6 +19,7 @@ import { CtaBanner } from "@/components/site/cta-banner";
 import { getActiveFaqs, getDistrictNames, getServiceTitles } from "@/lib/queries";
 import { getSettings, telHref, waHref } from "@/lib/settings";
 import { MAPS_DIRECTIONS_URL, MAPS_EMBED_URL, SITE } from "@/lib/site";
+import streetsData from "@/data/istanbul-sokaklar.json";
 
 /** Satır bazlı neighborhoods alanını temiz listeye çevirir. */
 function parseNeighborhoods(raw: string | null | undefined): string[] {
@@ -30,6 +31,9 @@ function parseNeighborhoods(raw: string | null | undefined): string[] {
 
 export const dynamic = "force-dynamic";
 
+/** Mahalle bazlı sokak listesi (UAVT dökümü) — ilçe/mahalle adı site diline normalize. */
+const STREETS = streetsData as Record<string, string[]>;
+
 export async function generateMetadata(): Promise<Metadata> {
   return {
     title: "İletişim - Arıza Bildirimi",
@@ -39,13 +43,47 @@ export async function generateMetadata(): Promise<Metadata> {
   };
 }
 
-export default async function ContactPage() {
-  const [settings, districts, services, faqs] = await Promise.all([
+interface ContactPageProps {
+  searchParams: Promise<{ ilce?: string | string[]; mahalle?: string | string[] }>;
+}
+
+export default async function ContactPage({ searchParams }: ContactPageProps) {
+  const [resolvedParams, settings, districts, services, faqs] = await Promise.all([
+    searchParams,
     getSettings(),
     getDistrictNames(),
     getServiceTitles(),
     getActiveFaqs(),
   ]);
+
+  const parsedDistricts = districts.map((d) => ({
+    name: d.name,
+    side: d.side,
+    neighborhoods: parseNeighborhoods(d.neighborhoods),
+  }));
+
+  // Derin link prefill (ilçe sayfalarındaki mahalle CTA'ları): yalnızca
+  // BEYAZ LİSTE kabul edilir — var olmayan ilçe/mahalle paramı tamamen
+  // yok sayılır (spam URL üretimi form değerlerine taşınmaz).
+  const rawIlce = Array.isArray(resolvedParams.ilce)
+    ? resolvedParams.ilce[0]
+    : resolvedParams.ilce;
+  const rawMahalle = Array.isArray(resolvedParams.mahalle)
+    ? resolvedParams.mahalle[0]
+    : resolvedParams.mahalle;
+  const ilce = (rawIlce ?? "").trim().slice(0, 60);
+  const mahalleParam = (rawMahalle ?? "").trim().slice(0, 80);
+  const prefillDistrict = parsedDistricts.find((d) => d.name === ilce);
+  const prefillMahalle =
+    prefillDistrict && prefillDistrict.neighborhoods.includes(mahalleParam)
+      ? mahalleParam
+      : "";
+  // Sokak listesi sunucuda yüklenir → istemci mount'ta fetch yapmaz,
+  // hydration deterministik kalır.
+  const prefillStreets =
+    prefillDistrict && prefillMahalle
+      ? (STREETS[`${prefillDistrict.name}|${prefillMahalle}`] ?? [])
+      : [];
 
   const telUrl = telHref(settings.phone);
   const waUrl = waHref(
@@ -117,12 +155,11 @@ export default async function ContactPage() {
         <div className="mt-10 grid gap-8 lg:grid-cols-2 lg:gap-12">
           {/* Sol - form */}
           <RequestForm
-            districts={districts.map((d) => ({
-              name: d.name,
-              side: d.side,
-              neighborhoods: parseNeighborhoods(d.neighborhoods),
-            }))}
+            districts={parsedDistricts}
             services={services.map((s) => s.title)}
+            initialDistrict={prefillDistrict && prefillMahalle ? prefillDistrict.name : ""}
+            initialMahalle={prefillMahalle}
+            initialStreets={prefillStreets}
           />
 
           {/* Sağ - iletişim bilgileri */}

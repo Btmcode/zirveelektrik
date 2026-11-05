@@ -1,8 +1,11 @@
 import { getAllDistricts, getAllServices, getActiveFaqs, getPublishedPosts } from "@/lib/queries";
 import { getSettings } from "@/lib/settings";
 import { SITE } from "@/lib/site";
+import streetsData from "@/data/istanbul-sokaklar.json";
 
 export const dynamic = "force-dynamic";
+
+const STREETS = streetsData as Record<string, string[]>;
 
 /**
  * GET /llms.txt — GEO (Generative Engine Optimization) standardı (llmstxt.org).
@@ -22,6 +25,28 @@ export async function GET() {
     getPublishedPosts(20),
   ]);
 
+  // Gerçek kapsam istatistikleri: mahalle adları District tablosundan,
+  // sokak kayıtları UAVT dökümünden — AI motorları için doğrulanabilir sayılar.
+  const districtRows = districts.map((d) => ({
+    ...d,
+    neighborhoodList: (d.neighborhoods ?? "")
+      .split("\n")
+      .map((n) => n.trim())
+      .filter(Boolean),
+  }));
+  const totalNeighborhoods = districtRows.reduce(
+    (sum, d) => sum + d.neighborhoodList.length,
+    0
+  );
+  const districtPrefixes = new Set(districtRows.map((d) => `${d.name}|`));
+  const totalStreets = Object.entries(STREETS).reduce(
+    (sum, [key, list]) =>
+      districtPrefixes.has(key.slice(0, key.indexOf("|") + 1))
+        ? sum + list.length
+        : sum,
+    0
+  );
+
   const lines: string[] = [];
 
   lines.push(`# ${SITE.name}`);
@@ -35,7 +60,7 @@ export async function GET() {
     `- ${SITE.legalName}, ${SITE.city} genelinde ${SITE.workingHours} elektrikçi hizmeti verir (${SITE.foundedYear} yılından beri).`
   );
   lines.push(
-    `- Hizmet bölgesi: İstanbul'un ${districts.length} ilçesi (Avrupa ve Asya yakası).`
+    `- Hizmet bölgesi: İstanbul'un ${districts.length} ilçesi (${totalNeighborhoods} mahalle, kayıtlı ${totalStreets} sokak/cadde — UAVT dökümü; ilçe başına kapsam: /bolgeler/{ilçe-slug}).`
   );
   lines.push(`- Adres: ${settings.address}`);
   lines.push(`- Telefon: ${settings.phone} (7/24 çağrıya açık)`);
@@ -72,8 +97,11 @@ export async function GET() {
     lines.push("## Hizmet Bölgeleri (İstanbul İlçeleri)");
     lines.push("");
     const chunks: string[] = [];
-    for (const d of districts) {
-      chunks.push(`[${d.name}](${SITE.url}/bolgeler/${d.slug})`);
+    for (const d of districtRows) {
+      const nh = d.neighborhoodList.length;
+      chunks.push(
+        `[${d.name}](${SITE.url}/bolgeler/${d.slug})${nh > 0 ? ` (${nh} mahalle)` : ""}`
+      );
     }
     lines.push(chunks.join(", ") + ".");
     lines.push("");

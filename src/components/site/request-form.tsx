@@ -71,6 +71,13 @@ interface RequestFormProps {
     neighborhoods: string[];
   }[];
   services: string[];
+  /** Derin link prefill: ilçe sayfasındaki mahalle CTA'sından gelir; sunucu
+   *  beyaz listeye doğrulamıştır (yoksa boş string — falsy kontrol yeterli). */
+  initialDistrict?: string;
+  initialMahalle?: string;
+  /** Prefill mahallenin sokak listesi: sunucuda yüklenir, istemci mount'ta
+   *  fetch yapmaz → hydration deterministik kalır. */
+  initialStreets?: string[];
 }
 
 interface ApiErrorBody {
@@ -79,10 +86,17 @@ interface ApiErrorBody {
   errors?: Record<string, string[]>;
 }
 
-export function RequestForm({ districts, services }: RequestFormProps) {
+export function RequestForm({
+  districts,
+  services,
+  initialDistrict = "",
+  initialMahalle = "",
+  initialStreets = [],
+}: RequestFormProps) {
   const [successCode, setSuccessCode] = useState<string | null>(null);
   // Mahalle seçimine bağlı sokak listesi (public /api/geo/streets).
-  const [streets, setStreets] = useState<string[]>([]);
+  // Prefill durumunda liste sunucudan initialStreets ile gelir.
+  const [streets, setStreets] = useState<string[]>(initialStreets);
   const [streetsLoading, setStreetsLoading] = useState(false);
   const [sokakChoice, setSokakChoice] = useState("");
   const [sokakOther, setSokakOther] = useState(false);
@@ -143,12 +157,12 @@ export function RequestForm({ districts, services }: RequestFormProps) {
       defaultValues: {
         name: "",
         phone: "",
-        mahalle: "",
+        mahalle: initialMahalle,
         sokak: "",
         binaNo: "",
         daireNo: "",
         address: "",
-        district: "",
+        district: initialDistrict,
         serviceType: "",
         message: "",
         website: "",
