@@ -16,7 +16,12 @@
 - **Avrupa Yakası para kazanan bölge**: dönüşümün ~%80'i buradan. Bütçe ağırlığı ve GEO içerik önceliği burada olmalı.
 - **Kanıtlanan en kârlı niyet aileleri**: "en yakın" (14,3 dönüşüm / 4.748 TL), "acil/7-24" (6 / 1.873 TL), **klima elektrik** ailesi (4,5 / 2.163 TL — kullanıcı onaylı hizmet alanı).
 - **En büyük bütçe sızıntıları**: iş ilanı/yevmiyeli aramalar (230 terim, 0 dönüşüm, 2.488 TL), dağıtım şirketi aramaları (Ayedaş/Bedas/Uedaş…), malzeme satın alma aramaları, DIY ("nasıl bağlanır") aramaları.
-- **Uydu/çanak/TV ailesi KARAR GEREKTİRİYOR**: 1.629 terim, 11.788 gösterim ama sadece 14 dönüşüm ve 10.859 TL maliyet. Dönüşüm getiren alt küme ("uydu tamircisi" 3 dönüşüm @714 TL, "tv montaj ustası", "tv montaj") tutarlı — hizmet veriliyorsa ayrı kampanya + hizmet sayfası önerilir; verilmiyorsa tamamı negatife çekilmelidir.
+- **Uydu/çanak/TV ailesi — KARAR VERİLDİ (hizmet açıldı)**: 1.629 terim,
+  11.788 gösterim. Yeni hizmet sayfası: `/hizmetler/tv-uydu-canak-montaji`.
+  Uydu terimleri artık **pozitif**; dönüşüm getiren alt küme ("uydu tamircisi"
+  3 dönüşüm @714 TL, "tv montaj ustası", "tv montaj") ifade eşlemeyle
+  eklenecek, geri kalan hacimli ama düşük dönüşümlü terimler yeni kampanya
+  içinde izlenecek (ayrı kampanya = bütçe kontrolü).
 
 ## 2. Pozitif Anahtar Kelimeler (Ads'e "Eklenen" olarak işaretlenecek)
 
@@ -75,12 +80,12 @@ Rapor bulgularının siteye yansıması:
 | kombi elektrik bağlantısı dönüşümlü | `/hizmetler/kombi-elektrik-baglantisi` mevcut | Kış sezonu öncesi meta açıklama güncellemesi önerilir |
 | Avrupa yakası ağırlıklı dönüşüm | 39 ilçe sayfası `/bolgeler/[slug]` mevcut | Beylikdüzü, Esenyurt, Başakşehir, Bakırköy, Büyükçekmece bölge sayfalarına mahalle/sokak zenginleştirmesi öncelikli |
 | "acil/7-24" niyeti dönüşümlü | Ana sayfa H1 + hero CTA'ları acil odaklı | Sorun yok; llms.txt ve JSON-LD bu niyeti zaten taşıyor |
-| uydu/TV talebi yüksek (11.788 gösterim) | Site içi sayfa YOK | **Karar bekliyor**: hizmet veriliyorsa `/hizmetler/tv-uydu-montaji` açılmalı; verilmiyorsa negatif liste tüm aileyi kapsamalı |
+| uydu/TV talebi yüksek (11.788 gösterim) | `/hizmetler/tv-uydu-canak-montaji` açıldı (SatelliteDish ikonu, öne çıkan) | Pozitif uydu terimleri Ads'e ifade eşlemeyle eklenir; ayrı kampanya ile bütçe izlenir |
 
 ## 5. Özet Aksiyonlar
 
 1. [ ] `negatif-kelime-listesi.csv` → hesap düzeyi negatif liste olarak Ads'e yükle
 2. [ ] `eklenecek-kelime-listesi.csv` → ilgili reklam gruplarına ifade eşlemeyle ekle
 3. [ ] "elektrikçi" geniş eşleme bütçesini azalt, "en yakın/acil" ailelerine kaydır
-4. [ ] Uydu/çanak hizmet kararı: sayfa aç / negatife çek (mal sahibi kararı)
+4. [x] Uydu/çanak hizmet kararı: SAYFA AÇILDI — `/hizmetler/tv-uydu-canak-montaji` (2026)
 5. [ ] Blog: klima ayrı hat + kombi bağlantısı yazıları (dönüşüm kanıtlı niyetler)

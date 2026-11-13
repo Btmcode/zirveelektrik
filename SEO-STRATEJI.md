@@ -401,9 +401,10 @@ searchengineland.com (2026), llmpulse.ai GEO rehberi.*
 - **Bütçe sızıntıları** (0 dönüşüm, ~7.300 TL): iş ilanı/yevmiyeli aramalar,
   dağıtım şirketi aramaları (Ayedaş/Bedas/Uedaş), malzeme satın alma,
   DIY "nasıl bağlanır" aramaları → 992 satırlık negatif liste hazır.
-- **Uydu/çanak/TV ailesi** (11.788 gösterim, 14 conv): hizmet kararı
-  bekliyor — açılırsa `/hizmetler/tv-uydu-montaji` AEO fırsatı, açılmazsa
-  negatif listeye tam kapsama.
+- **Uydu/çanak/TV ailesi** (11.788 gösterim, 14 conv): MAL SAHİBİ KARARI
+  HİZMET AÇILDI — `/hizmetler/tv-uydu-canak-montaji` yayında (SatelliteDish
+  ikonu, öne çıkan). Uydu terimleri pozitif anahtar kelime setine alındı;
+  Ads tarafında ayrı kampanya ile bütçe izlemesi önerilir.
 
 ### 13.2 Çıktılar
 - `docs/google-ads/analiz-raporu.md` — yönetici özeti + aksiyon planı

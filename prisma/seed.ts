@@ -481,6 +481,48 @@ Kombinin gaz ve su tesisatı işleri tesisatçı kapsamındadır; biz kombinin *
 
 İstanbul genelinde kombi elektrik bağlantısı ve tüm kombi elektrik arızaları için Zirve Elektrik'i arayın.`,
   },
+  {
+    slug: "tv-uydu-canak-montaji",
+    title: "TV Uydu Çanak Montajı",
+    excerpt:
+      "Çanak anten montajı, uydu ayarı ve TV duvar montajı. Sinyal yok, kanal kaybı ve anten arızalarında aynı gün çözüm.",
+    icon: "SatelliteDish",
+    featured: true,
+    sortOrder: 14,
+    priceNote: "Mesafeye göre net teklif",
+    metaTitle: "TV Uydu Çanak Anten Montajı İstanbul | Zirve Elektrik",
+    metaDescription:
+      "Uydu çanak anten montajı, uydu ayarı, TV duvar montajı ve sinyal arızası çözümü. İstanbul'da uyducu ve çanak anten ustası için Zirve Elektrik.",
+    content: g`Çanak anten, rüzgâr, kablo eskimesi ve yanlış hizalama yüzünden zamanla sinyal kaybeder. Kanallar kayboluyor, görüntü bozuluyor veya TV hiç sinyal almıyorsa sorun genelde çanak hizası, LNB kablosu ya da bağlantı noktalarındadır. Zirve Elektrik, İstanbul'da çanak anten montajı, uydu ayarı ve TV duvar montajını aynı gün yapıyor.
+
+## Çanak Anten Montajında Doğru Kurulum
+
+- **Hizalama:** Çanak, Türkmet/Türksat uydusuna hassas biçimde yönlendirilir; sinyal kalitesi ölçümle netleştirilir.
+- **LNB ve kablo:** Kaliteli LNB ve dış mekâna uygun koaksiyel kablo kullanılır; ek noktaları su geçirmez yapılır.
+- **Sabitleme:** Çanak, rüzgâr yükünü taşıyacak şekilde çatı/duvara sağlam sabitlenir; montaj sonrası sarkma olmaz.
+- **Çoklu çıkış:** Evde birden fazla TV varsa dağıtıcı (multiswitch/ splitter) ile doğru sinyal dağıtımı planlanır.
+
+## Hizmet Kapsamımız
+
+1. Çanak anten montajı (çatı, duvar, balkon uygun güzergâh)
+2. Uydu ayarı ve sinyal ölçümü (Türksat/Türkmet)
+3. TV duvar braketi montajı ve kablo gizleme
+4. LNB, koaksiyel kablo ve dağıtıcı değişimi
+5. Arıza tespiti: kanal kaybı, sinyal yok, görüntü bozulması, kablo eskimesi
+
+## Sık Karşılaştığımız Uydu Arızaları
+
+- **Sinyal yok / kanal bulunamıyor:** Çanak hizası kaymış veya LNB arızalı olabilir; yeniden hizalama ve LNB değişimi yapılır.
+- **Yağmurda görüntü gidip geliyor:** Kablo ek noktaları su almış olabilir; ekler yenilenir.
+- **Tek TV'de sorun:** Dağıtıcı veya kablo hattı arızalıdır; hat kontrol edilir.
+- **Rüzgârda kayma:** Sabitleme yeniden yapılır, çanak destekleri güçlendirilir.
+
+## Kapsam Notu
+
+Televizyon arızaları (panel hasarı vs.) servis kapsamı dışındadır; biz anten tarafını (çanak, LNB, kablo, dağıtım ve TV duvar montajı) çözüyoruz.
+
+İstanbul genelinde uydu çanak montajı ve tüm anten arızaları için Zirve Elektrik'i arayın.`,
+  },
 ];
 
 // ---------- İstanbul ilçeleri ----------

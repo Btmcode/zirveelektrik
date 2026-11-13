@@ -4,7 +4,7 @@ import {
   Wrench, Phone, Clock, MapPin, Star, CheckCircle2, AlertTriangle,
   Sparkles, FileText, Users, Award, ThumbsUp, CalendarClock, Wallet,
   Home, Factory, Tv, Wifi, Fan, Heater, Flame, Droplets, Settings,
-  Gauge, Lock, KeyRound, Hammer, Drill, TriangleAlert,
+  Gauge, Lock, KeyRound, Hammer, Drill, TriangleAlert, SatelliteDish,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
@@ -19,7 +19,7 @@ export const ICON_MAP: Record<string, LucideIcon> = {
   Wrench, Phone, Clock, MapPin, Star, CheckCircle2, AlertTriangle,
   TriangleAlert, Sparkles, FileText, Users, Award, ThumbsUp, CalendarClock,
   Wallet, Home, Factory, Tv, Wifi, Fan, Flame, Droplets, Settings,
-  Gauge, Lock, KeyRound, Hammer, Drill,
+  Gauge, Lock, KeyRound, Hammer, Drill, SatelliteDish,
 };
 
 export function getIcon(name?: string | null): LucideIcon {
