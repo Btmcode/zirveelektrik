@@ -1,16 +1,28 @@
 import { PrismaClient } from '@prisma/client'
 
 /**
- * Prisma Postgres (Vercel Storage) istemcisi.
+ * Bağlantı adresi çözümleme:
  *
- * Not: Vercel entegrasyonu bağlantı adresini "postgres://" şemasıyla verebiliyor;
- * Prisma motoru ise yalnızca "postgresql://" kabul eder (P1013). Aşağıdaki
- * normalize adımı iki şemayı da sorunsuz çalıştırır.
+ * 1. Fallback: Bazı sandbox/CI ortamları eski SQLite döneminden kalma
+ *    "DATABASE_URL=file:..." değerini kabuk seviyesinde export ediyor ve bu
+ *    değer .env.local'i eziyor. Geçersiz şema görürsek postgres mirror
+ *    değişkenlerinden birine düşer (DATABASE_POSTGRES_URL / DATABASE_PRISMA_DATABASE_URL).
+ * 2. Normalize: Vercel entegrasyonu "postgres://" şemasıyla verebiliyor;
+ *    Prisma motoru yalnızca "postgresql://" kabul eder (P1013).
  */
 function resolveDatabaseUrl(): string | undefined {
   const raw = process.env.DATABASE_URL
-  if (!raw) return undefined
-  return raw.replace(/^postgres:\/\//, "postgresql://")
+  const isPostgres = raw?.startsWith("postgresql://") || raw?.startsWith("postgres://")
+
+  const candidate =
+    raw && isPostgres
+      ? raw
+      : (process.env.DATABASE_POSTGRES_URL ||
+        process.env.DATABASE_PRISMA_DATABASE_URL ||
+        raw) // son çare: ham değeri bırak (Prisma kendi hatasını verir)
+
+  if (!candidate) return undefined
+  return candidate.replace(/^postgres:\/\//, "postgresql://")
 }
 
 const globalForPrisma = globalThis as unknown as {

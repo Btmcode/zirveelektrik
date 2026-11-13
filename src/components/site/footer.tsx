@@ -259,8 +259,16 @@ export async function Footer() {
       {/* Alt bar - mobilde çağrı çubuğu için ek boşluk (DESIGN.md §5) */}
       <div className="border-t border-zinc-800">
         <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-3 px-4 pb-24 pt-6 text-xs text-zinc-500 sm:flex-row sm:px-6 md:pb-6 lg:px-8">
-          <p>
-            © {year} Zirve Elektrik - zirveelektrik.net. Tüm hakları saklıdır.
+          <p className="flex flex-wrap items-center justify-center gap-x-2 sm:justify-start">
+            <span>
+              © {year} Zirve Elektrik - zirveelektrik.net. Tüm hakları saklıdır.
+            </span>
+            <span
+              className="rounded-sm bg-zinc-900 px-1.5 py-0.5 font-mono text-[10px] tracking-wide text-zinc-500"
+              title={`Site sürümü: ${SITE.version}`}
+            >
+              v{SITE.version}
+            </span>
           </p>
           <nav aria-label="Yasal sayfalar">
             <ul className="flex flex-wrap items-center justify-center gap-x-1 gap-y-1">

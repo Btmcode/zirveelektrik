@@ -7,6 +7,8 @@ export const SITE = {
   legalName: "Zirve Elektrik Elektrik Tesisat Hizmetleri",
   domain: "zirveelektrik.net",
   url: "https://zirveelektrik.net",
+  // Sürüm numarası - footer'da gösterilir, dağıtım doğrulaması için kullanılır.
+  version: "1.1.0",
   city: "İstanbul",
   region: "İstanbul",
   description:
