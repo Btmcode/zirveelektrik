@@ -381,3 +381,31 @@ yalnızca organik arama + GBP + AI motorları (Google Ads planlanmadı). Kaynakl
 Google Search Central AI optimizasyon rehberi, Google Business Profile yardım,
 BrightLocal 2026 Local Search Ranking Factors, clickrank.ai, localdominator.co,
 searchengineland.com (2026), llmpulse.ai GEO rehberi.*
+
+## 13. Google Ads Arama Terimleri Analizi (2026)
+
+> Not: Yukarıdaki "Google Ads planlanmadı" ifadesi güncellendi — kampanya
+> aktif çalışıyor ve arama terimi verisi artık SEO/GEO/AEO girdisi olarak
+> kullanılıyor. Tam analiz: `docs/google-ads/analiz-raporu.md`.
+
+### 13.1 Ana bulgular
+- **Avrupa Yakası** dönüşümün ~%80'ini üretiyor (19,7 conv / 15.114 TL) →
+  GEO içerik ve bütçe önceliği Avrupa ilçeleri (Beylikdüzü, Esenyurt,
+  Başakşehir, Bakırköy, Büyükçekmece).
+- **"en yakın" niyet ailesi** en verimli dönüşüm kaynağı (14,3 conv) →
+  `/en-yakin-elektrikci` sayfası bu niyetin AEO hedefi olarak güçlendirildi.
+- **Klima ve kombi elektrik hizmeti** (kullanıcı onaylı) arama terimlerinde
+  dönüşümlü: "klima elektrikçisi" (1,5 conv @ 79 TL), "klima elektrik
+  bağlantısı", "klima elektrik tesisatı" → hizmet sayfaları bu niyetleri
+  kapsıyor; blog destek yazıları planlandı.
+- **Bütçe sızıntıları** (0 dönüşüm, ~7.300 TL): iş ilanı/yevmiyeli aramalar,
+  dağıtım şirketi aramaları (Ayedaş/Bedas/Uedaş), malzeme satın alma,
+  DIY "nasıl bağlanır" aramaları → 992 satırlık negatif liste hazır.
+- **Uydu/çanak/TV ailesi** (11.788 gösterim, 14 conv): hizmet kararı
+  bekliyor — açılırsa `/hizmetler/tv-uydu-montaji` AEO fırsatı, açılmazsa
+  negatif listeye tam kapsama.
+
+### 13.2 Çıktılar
+- `docs/google-ads/analiz-raporu.md` — yönetici özeti + aksiyon planı
+- `docs/google-ads/eklenecek-kelime-listesi.csv` — 137 pozitif terim (ifade eşleme)
+- `docs/google-ads/negatif-kelime-listesi.csv` — 992 negatif terim (hesap düzeyi)
