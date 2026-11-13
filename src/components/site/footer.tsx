@@ -28,6 +28,7 @@ const SOCIAL_LINKS = [
 /** Kurumsal nav kolonu - ana sayfalar + yasal sayfalar. */
 const CORPORATE_LINKS = [
   { href: "/en-yakin-elektrikci", label: "En Yakın Elektrikçi" },
+  { href: "/elektrik-kesintisi", label: "Elektrik Kesintisi Rehberi" },
   { href: "/hakkimizda", label: "Hakkımızda" },
   { href: "/hizmetler", label: "Tüm Hizmetler" },
   { href: "/blog", label: "Blog" },

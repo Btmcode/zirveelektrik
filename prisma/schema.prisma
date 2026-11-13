@@ -58,6 +58,8 @@ model BlogPost {
   publishedAt     DateTime?
   metaTitle       String?
   metaDescription String?
+  // AEO: "Soru :: Yanıt" satırları — yazı sonunda görünür SSS + FAQPage schema
+  faq             String?
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
 }

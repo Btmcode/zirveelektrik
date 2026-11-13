@@ -7,7 +7,7 @@ import { getFeaturedServices } from "@/lib/queries";
 
 /** Ana sayfa - öne çıkan hizmetler bölümü. */
 export async function ServicesSection() {
-  const services = await getFeaturedServices(6);
+  const services = await getFeaturedServices(8);
   if (services.length === 0) return null;
 
   return (

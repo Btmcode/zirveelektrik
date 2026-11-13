@@ -283,7 +283,7 @@ Yeni binalarda ve işyerlerinde topraklama tesisatı kanunen zorunludur. İşyer
     excerpt:
       "Klimaya ayrı devre ve sigorta hattı çekimi. Aşırı ısınan ortak hatlar yerine güvenli ayrı hat.",
     icon: "AirVent",
-    featured: false,
+    featured: true,
     sortOrder: 8,
     priceNote: "Mesafeye göre net teklif",
     metaTitle: "Klima Elektrik Hattı Çekimi İstanbul | Zirve Elektrik",
@@ -438,6 +438,48 @@ Site yönetimlerine ortak sayaçlı, paylaşımlı şarj altyapısı kuruyoruz: 
 EV şarjı, saatlerce süren yüksek akım yükü demektir. Uygun kesitte olmayan kablo, topraklamasız montaj veya kaçak akım koruması olmadan kurulan ünite yangın riski taşır. Tüm kurulumlarımız ilgili standartlara göre yapılır ve garanti edilir.
 
 İstanbul'da elektrikli araç şarj ünitesi kurulumu için keşif randevusu alın.`,
+  },
+  {
+    slug: "kombi-elektrik-baglantisi",
+    title: "Kombi Elektrik Bağlantısı",
+    excerpt:
+      "Kombi için topraklı priz, ayrı sigorta hattı ve termostat kablolaması. Kombi elektrik arızaları ve sigorta atması sorunlarına çözüm.",
+    icon: "Flame",
+    featured: true,
+    sortOrder: 13,
+    priceNote: "Mesafeye göre net teklif",
+    metaTitle: "Kombi Elektrik Bağlantısı ve Tesisatı İstanbul | Zirve Elektrik",
+    metaDescription:
+      "Kombi elektrik bağlantısı, termostat kablolaması ve kombi elektrik arızası tamiri. İstanbul'da kombi elektrik tesisatı için Zirve Elektrik'e ulaşın.",
+    content: g`Kombi, su pompası ve elektronik kartıyla sürekli elektrik tüketen bir cihazdır; doğru elektrik bağlantısı hem cihazın ömrünü hem de evin güvenliğini belirler. Zirve Elektrik, İstanbul'da kombinin elektrik ayağını kurallara uygun biçimde kuruyor: topraklı priz, doğru kesitte hat, ayrı sigorta ve sağlam termostat kablolaması.
+
+## Kombi Elektrik Bağlantısında Dikkat Edilecekler
+
+- **Topraklı priz:** Kombi mutlaka topraklamalı hatta bağlanmalıdır; topraksız bağlantı kaçak akımda koruma sağlamaz.
+- **Ayrı sigorta:** Kombinin kendi otomat sigortası olmalı; kombi çamaşır makinesi gibi ortak hatlarla paylaşılmamalıdır.
+- **Kablo kesiti:** Üretici talimatındaki kesite uygun kablo kullanılır (genelde 2,5 mm²); ince veya eskimiş kablo ısınma riski taşır.
+- **Termostat kablolaması:** Oda termostatı veya dijital kontrol ünitesi kablolaması karta zarar vermeden, doğru uçlardan yapılmalıdır.
+
+## Hizmet Kapsamımız
+
+1. Kombi gücüne uygun hat ve sigorta hesabı
+2. Panodan kombi noktasına ayrı hat çekimi ve topraklı priz montajı
+3. Panoya ayrı otomat (ve gerekiyorsa kaçak akım rölesi) ekleme
+4. Oda termostatı ve kontrol ünitesi kablolaması
+5. Test: gerilim, topraklama sürekliliği ve kombi çalışma kontrolü
+
+## Sık Karşılaştığımız Kombi Elektrik Arızaları
+
+- **Kombi hiç açılmıyor:** Prize elektrik gelmiyor olabilir; hat ve sigorta kontrolü yapılır.
+- **Kombi çalışırken sigorta atıyor:** Kablo kesiti yetersiz, kısa devre veya kaçak akım olabilir; tespit edilip giderilir.
+- **Termostat çalışmıyor:** Kablolama hatası veya kablo arızası yeniden bağlanarak çözülür.
+- **Priz ve kabloda ısınma:** Hemen müdahale gerektiren riskli durumdur; hat yenilenir.
+
+## Kapsam Notu
+
+Kombinin gaz ve su tesisatı işleri tesisatçı kapsamındadır; biz kombinin **elektrik** ayağını (hat, sigorta, priz, termostat kablolaması ve elektrik arızaları) çözüyoruz. İki iş birbirine bağlıysa tesisatçıyla eş zamanlı çalışabiliriz.
+
+İstanbul genelinde kombi elektrik bağlantısı ve tüm kombi elektrik arızaları için Zirve Elektrik'i arayın.`,
   },
 ];
 

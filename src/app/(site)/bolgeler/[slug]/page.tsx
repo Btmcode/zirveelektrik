@@ -30,10 +30,16 @@ import {
 import { getSettings } from "@/lib/settings";
 import { SITE } from "@/lib/site";
 import streetsData from "@/data/istanbul-sokaklar.json";
+import districtCoords from "@/data/istanbul-ilce-koordinatlar.json";
 
 export const dynamic = "force-dynamic";
 
 const STREETS = streetsData as Record<string, string[]>;
+/** İlçe merkez koordinatları (GEO sinyali; yaklaşık centroid değerleri). */
+const DISTRICT_COORDS = districtCoords as Record<
+  string,
+  { lat: number; lng: number }
+>;
 /** Her mahallede ilk N sokak gösterilir; kalanı özet cümlede sayılır. */
 const MAX_STREET_CHIPS = 12;
 
@@ -133,6 +139,7 @@ export default async function DistrictDetailPage({
           districtName: district.name,
           neighborhoods,
           serviceNames: services.slice(0, 10).map((s) => s.title),
+          coords: DISTRICT_COORDS[district.name],
         })}
       />
       <JsonLd data={faqSchema(districtFaqs)} />

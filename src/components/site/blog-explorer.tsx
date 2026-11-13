@@ -17,6 +17,8 @@ export interface ExplorerPost {
   publishedAt?: Date | string | null;
   updatedAt: Date | string;
   readingTime: number;
+  /** Sunucuda hesaplanan arama gövdesi: başlık + özet + etiketler + H2 başlıkları. */
+  searchBlob: string;
 }
 
 function tagList(tags: string): string[] {
@@ -68,10 +70,8 @@ export function BlogExplorer({
     const q = query.trim().toLocaleLowerCase("tr");
     return posts.filter((post) => {
       const matchesTag = !activeTag || tagList(post.tags).includes(activeTag);
-      const matchesQuery =
-        !q ||
-        post.title.toLocaleLowerCase("tr").includes(q) ||
-        post.excerpt.toLocaleLowerCase("tr").includes(q);
+      // Arama gövdesi başlık/özet/etiket/başlıkları kapsar (sunucuda hazırlandı)
+      const matchesQuery = !q || post.searchBlob.includes(q);
       return matchesTag && matchesQuery;
     });
   }, [posts, query, activeTag]);

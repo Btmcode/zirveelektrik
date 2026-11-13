@@ -1,6 +1,13 @@
 import { SITE, DEFAULT_META } from "@/lib/site";
+import { countWords } from "@/lib/content-utils";
 
 /** Schema.org yardımcıları - SEO/AEO/GEO yapısal veri şemaları */
+
+/** Göreli yol (ör. /images/blog/x.jpg) mutlak URL'e çevirir (OG/Article.image). */
+function absoluteUrl(path: string): string {
+  if (/^https?:\/\//.test(path)) return path;
+  return `${SITE.url}${path.startsWith("/") ? path : `/${path}`}`;
+}
 
 interface ReviewInput {
   author: string;
@@ -194,18 +201,30 @@ export function faqSchema(faqs: { question: string; answer: string }[]) {
  * sokak sayıları UAVT dökümünden geldiği için kapsam iddiaları gerçek
  * veriye dayanır (yanıt motorlarının alıntılayabileceği doğrulanabilir
  * istatistik sinyali).
+ *
+ * coords: ilçe merkez koordinatı (istanbul-ilce-koordinatlar.json) —
+ * AI motorlarının "İstanbul'un hangi bölgesi?" sorusuna coğrafi tabanlı
+ * yanıt üretmesini sağlar (geo-grounding sinyali).
  */
 export function districtServiceSchema(input: {
   districtSlug: string;
   districtName: string;
   neighborhoods: string[];
   serviceNames: string[];
+  coords?: { lat: number; lng: number };
 }) {
   const districtPlace: Record<string, unknown> = {
     "@type": "AdministrativeArea",
     name: `${input.districtName}, İstanbul`,
     containedInPlace: { "@type": "City", name: "İstanbul" },
   };
+  if (input.coords) {
+    districtPlace.geo = {
+      "@type": "GeoCoordinates",
+      latitude: input.coords.lat,
+      longitude: input.coords.lng,
+    };
+  }
 
   return {
     "@context": "https://schema.org",
@@ -241,6 +260,13 @@ export function districtServiceSchema(input: {
   };
 }
 
+/**
+ * Blog yazısı şeması (Article) + AEO sinyalleri:
+ * - image: kapak görseli (mutlak URL) — OG ve AI motorları için zorunlu sinyal
+ * - speakable: sesli asistanlar ve AI motorları için alıntı hedefleri
+ *   (başlık + "Kısa Yanıt" bloğu — doğrudan cevap çıkarımını kolaylaştırır)
+ * - wordCount/articleSection/keywords: içerik bağlamı sinyalleri
+ */
 export function articleSchema(post: {
   slug: string;
   title: string;
@@ -248,7 +274,16 @@ export function articleSchema(post: {
   publishedAt?: Date | null;
   updatedAt: Date;
   author: string;
+  content?: string;
+  tags?: string;
+  coverImage?: string | null;
 }) {
+  const tags = (post.tags ?? "")
+    .split(",")
+    .map((tag) => tag.trim())
+    .filter(Boolean);
+  const wordCount = post.content ? countWords(post.content) : undefined;
+
   return {
     "@context": "https://schema.org",
     "@type": "Article",
@@ -261,5 +296,37 @@ export function articleSchema(post: {
     author: { "@type": "Organization", name: post.author || SITE.name },
     publisher: { "@id": `${SITE.url}/#organization` },
     mainEntityOfPage: `${SITE.url}/blog/${post.slug}`,
+    image: [absoluteUrl(post.coverImage || "/og.jpg")],
+    ...(wordCount ? { wordCount } : {}),
+    ...(tags.length > 0
+      ? { articleSection: tags[0], keywords: tags.join(", ") }
+      : {}),
+    speakable: {
+      "@type": "SpeakableSpecification",
+      cssSelector: ["h1", "#kisa-yanit"],
+    },
+  };
+}
+
+/**
+ * Blog listesi şeması (CollectionPage + ItemList).
+ * Arama motorlarına blog arşivinin bütünlüğünü ve yazı sırasını bildirir.
+ */
+export function blogCollectionSchema(posts: { slug: string; title: string }[]) {
+  return {
+    "@context": "https://schema.org",
+    "@type": "CollectionPage",
+    name: "Elektrik Rehberleri Blog",
+    url: `${SITE.url}/blog`,
+    inLanguage: "tr-TR",
+    mainEntity: {
+      "@type": "ItemList",
+      itemListElement: posts.map((post, index) => ({
+        "@type": "ListItem",
+        position: index + 1,
+        name: post.title,
+        url: `${SITE.url}/blog/${post.slug}`,
+      })),
+    },
   };
 }

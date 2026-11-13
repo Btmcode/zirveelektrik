@@ -326,6 +326,54 @@ sorunu).
 - **İş hedefi (Ads'siz):** ay 1-2: 30-60 arama/gün, ay 3: 100-140,
   ay 6: 200+, ay 12: 400-500 (GBP + organik + AI + tekrar müşteri toplamı)
 
+
+---
+
+## 12. Faz 3 Uygulaması: Blog AEO + UX (Bu Oturumda Tamamlandı)
+
+### 12.1 Blog yazılarında AEO sinyalleri
+- **"Kısa Yanıt" bloğu (`#kisa-yanit`):** Her yazının başında özet doğrudan
+  cevap olarak gösterilir. AI yanıt motorlarının alıntı için aradığı "soru →
+  40-60 kelimelik cevap" biçimi; ayrıca `SpeakableSpecification` cssSelector
+  hedefi (sesli asistanlar için).
+- **Yazı SSS alanı (`BlogPost.faq`):** Panelde "Soru :: Yanıt" satırları
+  girilir; yazı sonunda görünür SSS bölümü + `FAQPage` JSON-LD olarak
+  yayınlanır. Google AI Overviews/Perplexity'nin soru-cevap alıntı
+  biçimine birebir uyar.
+- **Article şeması zenginleştirildi:** `image` (kapak, mutlak URL),
+  `wordCount`, `articleSection`, `keywords` alanları eklendi.
+- **Sosyal/AI önizleme:** Yazı detayında `og:image` + `twitter:card`
+  summary_large_image (kapak görseliyle).
+
+### 12.2 Blog UX iyileştirmeleri
+- **Yapışkan içindekiler (masaüstü):** Sol/ sağ panelde sticky TOC + scroll-spy
+  ile aktif başlık vurgusu; mobilde satır içi TOC korunur.
+- **Yazı geçişi:** Yazı sonunda Önceki/Sonraki navigasyon kartları (oturum
+  derinliği artışı + iç linkleme).
+- **"Başa dön" düğmesi:** Uzun yazılarda 600px sonrası görünür yüzen düğme.
+- **Genişletilmiş arama:** Liste araması başlık+özet+etiket+H2 başlıklarını
+  kapsar (sunucuda hesaplanan searchBlob; tam içerik istemciye taşınmaz).
+- **Kapak boşsa ikon placeholder:** Boş gradyan alan yerine amaçlı görsel.
+- **Panel düzeltmesi:** metaTitle/metaDescription doğrulama limitleri (100/200)
+  mevcut üretim verisine göre gevşetildi — uzun SEO başlıklı yazılar artık
+  panelde kaydedilebiliyordu (sessiz 400 hatası giderildi).
+
+### 12.3 GEO koordinat sinyali
+- `istanbul-ilce-koordinatlar.json`: 39 ilçe merkez koordinatı (yaklaşık
+  centroid). İlçe sayfalarındaki `Service.areaServed → AdministrativeArea.geo`
+  alanına eklenir → AI motorlarında coğrafi tabanlı (geo-grounding) yanıt.
+- `CollectionPage + ItemList` şeması blog listesine eklendi (arşiv bütünlüğü).
+
+### 12.4 Sonraki adımlar (sıralı)
+1. GBP: ilçe bazlı hizmet listesi + kısa açıklamaya "X mahalle" istatistiği.
+2. Blog planı: haftada 1 yerel-uzun kuyruk yazı ("Kadıköy'de sigorta değişimi
+   fiyatı" kalıbı); her yazıda Kısa Yanıt + 3-5 SSS doldurulacak.
+3. GSC: 18 yazının yeniden indekslemesi istenir; FAQPage zengin sonuç raporu
+   izlenir.
+4. Mahalle sayfaları (Faz 4, opsiyonel): yüksek hacimli 20 mahalle için
+   /bolgeler/{ilce}/{mahalle} sayfaları — yalnızca doğrulanabilir mahalle
+   içeriğiyle (kısa sayfa = ince içerik riski; önce GSC verisiyle talep testi).
+
 ---
 
 *Doküman: Zirve Elektrik projesi. Son güncelleme: 2026. Kanal stratejisi:

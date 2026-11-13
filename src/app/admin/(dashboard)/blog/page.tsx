@@ -62,6 +62,7 @@ interface AdminBlogPost {
   publishedAt: string | null;
   metaTitle: string | null;
   metaDescription: string | null;
+  faq: string | null;
   createdAt: string;
 }
 
@@ -76,6 +77,7 @@ const EMPTY_VALUES: BlogFormValues = {
   published: false,
   metaTitle: "",
   metaDescription: "",
+  faq: "",
 };
 
 function PublishedField({
@@ -162,6 +164,7 @@ export default function AdminBlogPage() {
       published: post.published,
       metaTitle: post.metaTitle ?? "",
       metaDescription: post.metaDescription ?? "",
+      faq: post.faq ?? "",
     });
     setDialogOpen(true);
   }
@@ -338,6 +341,18 @@ export default function AdminBlogPage() {
                 <Input {...form.register("metaDescription")} placeholder="En fazla 160 karakter" />
               </Field>
             </FormGrid>
+
+            <Field
+              label="Sık Sorulan Sorular (AEO)"
+              error={errors.faq?.message}
+              hint="Her satıra: Soru :: Yanıt — yazı sonunda SSS bölümü ve FAQPage yapısal verisi olarak yayınlanır"
+            >
+              <Textarea
+                {...form.register("faq")}
+                placeholder={"Sigorta sürekli atarsa ne yapmalıyım? :: Önce fişleri çıkarıp hangi devrede olduğunu tespit edin...\nTopraklama zorunlu mu? :: Evet, yeni tesisat ve tadilatlarda zorunludur..."}
+                className="h-24"
+              />
+            </Field>
 
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setDialogOpen(false)} disabled={saving}>

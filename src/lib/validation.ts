@@ -89,8 +89,8 @@ export const serviceUpsertSchema = z.object({
   featured: z.boolean().default(false),
   active: z.boolean().default(true),
   sortOrder: z.number().int().min(0).max(999).default(0),
-  metaTitle: z.string().trim().max(70).optional().default(""),
-  metaDescription: z.string().trim().max(160).optional().default(""),
+  metaTitle: z.string().trim().max(100).optional().default(""),
+  metaDescription: z.string().trim().max(200).optional().default(""),
 });
 
 export const blogUpsertSchema = z.object({
@@ -102,8 +102,10 @@ export const blogUpsertSchema = z.object({
   author: z.string().trim().max(80).default("Zirve Elektrik Editör"),
   tags: z.string().trim().max(300).default(""),
   published: z.boolean().default(false),
-  metaTitle: z.string().trim().max(70).optional().default(""),
-  metaDescription: z.string().trim().max(160).optional().default(""),
+  metaTitle: z.string().trim().max(100).optional().default(""),
+  metaDescription: z.string().trim().max(200).optional().default(""),
+  // AEO SSS: satır biçimi "Soru :: Yanıt" (parsePostFaq ile ayrıştırılır)
+  faq: z.string().trim().max(4000, "SSS alanı en fazla 4000 karakter olabilir").optional().default(""),
 });
 
 export const districtUpsertSchema = z.object({
@@ -113,8 +115,8 @@ export const districtUpsertSchema = z.object({
   neighborhoods: z.string().trim().max(4000, "Mahalle listesi en fazla 4000 karakter olabilir").default(""),
   side: z.enum(["AVRUPA", "ANADOLU"]).default("AVRUPA"),
   active: z.boolean().default(true),
-  metaTitle: z.string().trim().max(70).optional().default(""),
-  metaDescription: z.string().trim().max(160).optional().default(""),
+  metaTitle: z.string().trim().max(100).optional().default(""),
+  metaDescription: z.string().trim().max(200).optional().default(""),
 });
 
 export const testimonialUpsertSchema = z.object({

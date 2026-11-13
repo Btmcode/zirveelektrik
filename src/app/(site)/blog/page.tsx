@@ -1,9 +1,11 @@
 import type { Metadata } from "next";
 import { Breadcrumbs } from "@/components/site/breadcrumbs";
+import { JsonLd } from "@/components/site/json-ld";
 import { BlogExplorer, type ExplorerPost } from "@/components/site/blog-explorer";
 import { CtaBanner } from "@/components/site/cta-banner";
 import { SectionHeading } from "@/components/site/section-heading";
-import { calcReadingTime } from "@/lib/content-utils";
+import { calcReadingTime, buildSearchBlob } from "@/lib/content-utils";
+import { blogCollectionSchema } from "@/lib/schema";
 import { getPublishedPosts } from "@/lib/queries";
 
 export const dynamic = "force-dynamic";
@@ -41,7 +43,9 @@ export default async function BlogPage({ searchParams }: BlogPageProps) {
   );
   const initialTag = requestedTag && validTags.has(requestedTag) ? requestedTag : null;
 
-  // İçeriği istemciye taşımamak için okuma süresi sunucuda hesaplanır
+  // İçeriği istemciye taşımamak için okuma süresi ve arama gövdesi sunucuda
+  // hesaplanır. Arama gövdesi: başlık + özet + etiketler + H2 başlıkları —
+  // "sigorta" diye ararken başlığı "Sigorta Panosu" olan yazı da bulunur.
   const explorerPosts: ExplorerPost[] = posts.map((post) => ({
     id: post.id,
     slug: post.slug,
@@ -52,10 +56,19 @@ export default async function BlogPage({ searchParams }: BlogPageProps) {
     publishedAt: post.publishedAt,
     updatedAt: post.updatedAt,
     readingTime: calcReadingTime(post.content),
+    searchBlob: buildSearchBlob({
+      title: post.title,
+      excerpt: post.excerpt,
+      tags: post.tags,
+      content: post.content,
+    }),
   }));
 
   return (
     <>
+      {explorerPosts.length > 0 ? (
+        <JsonLd data={blogCollectionSchema(explorerPosts)} />
+      ) : null}
       <Breadcrumbs items={[{ name: "Blog", url: "/blog" }]} />
       <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 md:py-16 lg:px-8">
         <SectionHeading
